@@ -23,8 +23,16 @@ window.rocketPower = new Phaser.Game({
     default: 'arcade',
     arcade: {
       gravity: { x: 0, y: GRAVITY_Y },
+      // Step with the render loop instead of a fixed 60Hz tick — the fixed
+      // step visibly stutters on 120Hz (ProMotion) displays.
+      fixedStep: false,
       debug: false,
     },
+  },
+  render: {
+    // Subpixel camera positions from the follow-lerp make sprites and tile
+    // seams shimmer; rounding render positions keeps them crisp.
+    roundPixels: true,
   },
   scale: {
     mode: Phaser.Scale.FIT,

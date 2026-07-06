@@ -14,6 +14,10 @@ export class Rocket {
     // Arcade bodies are axis-aligned boxes; a smaller body keeps rotated
     // sprites from colliding with walls they visibly don't touch.
     this.body.setSize(16, 36);
+    // Sync the flame AFTER physics has written the body's new transform to
+    // the sprite (POST_UPDATE). Doing this in scene.update() reads last
+    // frame's transform and the flame visibly trails the rocket at speed.
+    scene.events.on(Phaser.Scenes.Events.POST_UPDATE, this.updateFlame, this);
   }
 
   get body(): Phaser.Physics.Arcade.Body {
@@ -41,8 +45,8 @@ export class Rocket {
     this.flame.setVisible(visible);
   }
 
-  /** Keeps the flame glued to the rocket's tail; call every frame. */
-  updateFlame(): void {
+  /** Keeps the flame glued to the rocket's tail; runs on POST_UPDATE. */
+  private updateFlame(): void {
     const tailAngle = this.sprite.rotation + Math.PI / 2;
     this.flame.setPosition(
       this.sprite.x + Math.cos(tailAngle) * FLAME_OFFSET,

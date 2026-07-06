@@ -93,7 +93,6 @@ export class GameScene extends Phaser.Scene {
       this.rocket.cutThrust();
     }
     this.rocket.setFlameVisible(thrusting);
-    this.rocket.updateFlame();
 
     this.hudAccumulator += delta;
     if (this.hudAccumulator >= HUD_UPDATE_INTERVAL_MS) {

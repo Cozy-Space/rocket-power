@@ -21,12 +21,12 @@ export const FUEL_BURN_RATE = 5;
 
 export const LANDING_THRESHOLDS: LandingThresholds = {
   /** Max impact speed in px/s the rocket survives on the pad. */
-  maxSpeed: 130,
+  maxSpeed: 400,
 };
 
 /**
- * Post-touchdown tip-over physics: whether the rocket rocks back upright or
- * falls over is decided here, not by an instant angle check.
+ * Post-touchdown ground physics: bouncing, skidding, and whether the rocket
+ * rocks back upright or tips over — decided by simulation, not thresholds.
  */
 export const SETTLE_CONFIG: SettleConfig = {
   criticalAngleDeg: 25,
@@ -36,6 +36,13 @@ export const SETTLE_CONFIG: SettleConfig = {
   restAngleDeg: 1,
   restAngularVelDeg: 5,
   tippedAngleDeg: 88,
+  gravity: GRAVITY_Y,
+  restitution: 0.35,
+  bounceMinSpeed: 60,
+  slideKeep: 0.6,
+  slideFriction: 2.5,
+  vxTipFactor: 0.6,
+  restSlideSpeed: 5,
 };
 
 /** How often the HUD receives updates, in ms. */

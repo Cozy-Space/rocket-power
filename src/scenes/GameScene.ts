@@ -34,6 +34,8 @@ export class GameScene extends Phaser.Scene {
   private lastVelocity = new Phaser.Math.Vector2();
   private phase: RunPhase = 'flying';
   private settle!: SettleState;
+  /** Base-pivot position of the sprite at the moment of touchdown. */
+  private settleOrigin = new Phaser.Math.Vector2();
   private timerStarted = false;
   private hudAccumulator = 0;
 
@@ -145,12 +147,25 @@ export class GameScene extends Phaser.Scene {
     const angularVel = body.angularVelocity;
     this.rocket.freeze();
     this.rocket.enterGroundPivot();
-    this.settle = createSettle(this.rocket.sprite.angle, angularVel, SETTLE_CONFIG);
+    this.settleOrigin.set(this.rocket.sprite.x, this.rocket.sprite.y);
+    this.settle = createSettle(
+      {
+        angleDeg: this.rocket.sprite.angle,
+        angularVelDeg: angularVel,
+        velocityX: this.lastVelocity.x,
+        velocityY: this.lastVelocity.y,
+      },
+      SETTLE_CONFIG,
+    );
     this.phase = 'settling';
   }
 
   private updateSettling(delta: number): void {
     this.settle = stepSettle(this.settle, delta, SETTLE_CONFIG);
+    this.rocket.sprite.setPosition(
+      this.settleOrigin.x + this.settle.slideOffset,
+      this.settleOrigin.y - this.settle.height,
+    );
     this.rocket.setAngle(this.settle.angleDeg);
 
     if (this.settle.status === 'upright') {

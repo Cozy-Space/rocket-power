@@ -19,9 +19,12 @@ npm run dev        # http://localhost:5173
 
 Rules: gravity pulls you down, fuel drains while thrusting (empty tank = glide only).
 Touching terrain anywhere but the pad — or the pad too fast — is a crash. Surviving
-the touchdown isn't winning yet: the rocket keeps settling, rocking on its base.
-Land gently and near-upright and it wobbles back to standing; come down too tilted
-(or spinning) and it tips over. Your time is taken at touchdown.
+the touchdown isn't winning yet: ground physics take over. Hard vertical impacts
+bounce the rocket into diminishing hops; leftover sideways speed makes it skid; and
+on every ground contact horizontal momentum converts into rotation — so landing
+perfectly upright but drifting sideways fast still tips it over in the direction of
+travel. Within the critical angle it rocks back upright; past it, gravity wins.
+Your time is taken at touchdown.
 
 ## Scripts
 

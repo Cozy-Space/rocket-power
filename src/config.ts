@@ -1,3 +1,4 @@
+import type { SettleConfig } from './game/rules/settle';
 import type { LandingThresholds } from './game/rules/types';
 
 /** All gameplay tunables in one place. */
@@ -19,10 +20,22 @@ export const FUEL_CAPACITY = 100;
 export const FUEL_BURN_RATE = 5;
 
 export const LANDING_THRESHOLDS: LandingThresholds = {
-  /** Max impact speed in px/s that still counts as a soft touchdown. */
-  maxSpeed: 100,
-  /** Max deviation from upright in degrees. */
-  maxAngleDeg: 12,
+  /** Max impact speed in px/s the rocket survives on the pad. */
+  maxSpeed: 130,
+};
+
+/**
+ * Post-touchdown tip-over physics: whether the rocket rocks back upright or
+ * falls over is decided here, not by an instant angle check.
+ */
+export const SETTLE_CONFIG: SettleConfig = {
+  criticalAngleDeg: 25,
+  gravityGain: 600,
+  damping: 0.8,
+  slamRestitution: 0.45,
+  restAngleDeg: 1,
+  restAngularVelDeg: 5,
+  tippedAngleDeg: 88,
 };
 
 /** How often the HUD receives updates, in ms. */

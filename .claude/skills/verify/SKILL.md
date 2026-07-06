@@ -39,7 +39,11 @@ const spr = s.children.list.find((c) => c.texture && c.texture.key === 'rocket')
    A working autopilot lives in the session scratchpad pattern: cruise right at y≈950
    (under stalactite y>820, over ridge y<1152), brake at x>3150, descend upright onto
    pad (x 3072–3584, top y 1920), thrust when vy>42 near ground. Expect `outcome: 'landed'`.
-3. **Timer sanity**: screenshot ~300ms after Enter — HUD TIME must read ~00:00.x, not seconds.
+3. **Settle/tip-over path**: after touchdown the rocket enters a settle phase (`body.moves`
+   goes false but `rp-run-ended` fires 1–3s LATER — poll for it, don't read the tint
+   immediately). Upright landing → wobble → `landed`; tilt to ~40° in the last ~40px of
+   descent (without building horizontal speed, or you get `too-fast`) → `tipped-over`.
+4. **Timer sanity**: screenshot ~300ms after Enter — HUD TIME must read ~00:00.x, not seconds.
 
 ## Gotchas
 

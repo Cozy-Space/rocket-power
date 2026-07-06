@@ -55,6 +55,19 @@ export class Rocket {
     this.flame.setRotation(this.sprite.rotation);
   }
 
+  setAngle(deg: number): void {
+    this.sprite.setAngle(deg);
+  }
+
+  /**
+   * Re-anchors the sprite to its bottom-center (keeping its visual position)
+   * so settle-phase rotation pivots on the base instead of the belly.
+   */
+  enterGroundPivot(): void {
+    this.sprite.setOrigin(0.5, 1);
+    this.sprite.y += this.sprite.displayHeight / 2;
+  }
+
   /** Freezes the rocket in place after the run ends. */
   freeze(): void {
     this.body.stop();

@@ -1,4 +1,4 @@
-import type { TouchdownResult } from './rules/types';
+import type { RunResult } from './rules/types';
 
 /**
  * Cross-scene events, emitted on the global `game.events` emitter so they
@@ -15,6 +15,6 @@ export interface HudUpdate {
 }
 
 export interface RunEnded {
-  result: TouchdownResult;
+  result: RunResult;
   elapsedMs: number;
 }

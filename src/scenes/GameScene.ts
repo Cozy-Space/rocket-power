@@ -6,6 +6,7 @@ import {
   FUEL_CAPACITY,
   HUD_UPDATE_INTERVAL_MS,
   LANDING_THRESHOLDS,
+  SETTLE_CONFIG,
   THRUST_ACCEL,
 } from '../config';
 import { EVT_HUD_UPDATE, EVT_RUN_ENDED, type HudUpdate, type RunEnded } from '../game/events';
@@ -13,7 +14,11 @@ import { loadMarkers, type LevelMarkers } from '../game/LevelLoader';
 import { Rocket } from '../game/Rocket';
 import { burn, createFuel, fuelFraction, hasFuel, type FuelState } from '../game/rules/fuel';
 import { evaluateTouchdown } from '../game/rules/landing';
+import { createSettle, stepSettle, type SettleState } from '../game/rules/settle';
+import type { RunResult } from '../game/rules/types';
 import { RunTimer } from '../game/rules/timer';
+
+type RunPhase = 'flying' | 'settling' | 'ended';
 
 export class GameScene extends Phaser.Scene {
   private rocket!: Rocket;
@@ -27,7 +32,8 @@ export class GameScene extends Phaser.Scene {
    * only reliable pre-impact velocity.
    */
   private lastVelocity = new Phaser.Math.Vector2();
-  private runEnded = false;
+  private phase: RunPhase = 'flying';
+  private settle!: SettleState;
   private timerStarted = false;
   private hudAccumulator = 0;
 
@@ -62,7 +68,7 @@ export class GameScene extends Phaser.Scene {
     this.timer = new RunTimer();
     this.timerStarted = false;
     this.lastVelocity.reset();
-    this.runEnded = false;
+    this.phase = 'flying';
     this.hudAccumulator = 0;
 
     if (!this.scene.isActive('ui')) {
@@ -71,7 +77,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    if (this.runEnded) return;
+    if (this.phase === 'ended') return;
+    if (this.phase === 'settling') {
+      this.updateSettling(delta);
+      return;
+    }
     if (!this.timerStarted) {
       this.timerStarted = true;
       this.timer.start(time);
@@ -111,23 +121,47 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onTerrainContact(): void {
-    if (this.runEnded) return;
-    this.runEnded = true;
+    if (this.phase !== 'flying') return;
     this.timer.stop(this.time.now);
 
     const body = this.rocket.body;
-    const result = evaluateTouchdown(
+    const check = evaluateTouchdown(
       {
         velocityX: this.lastVelocity.x,
         velocityY: this.lastVelocity.y,
-        angleDeg: this.rocket.sprite.angle,
         contactFromBelow: body.blocked.down,
         onPad: this.markers.padRect.contains(body.center.x, body.bottom),
       },
       LANDING_THRESHOLDS,
     );
 
+    if (!check.ok) {
+      this.rocket.freeze();
+      this.finishRun({ outcome: 'crashed', reason: check.reason });
+      return;
+    }
+
+    // Touchdown survived — now physics decides whether the rocket stands.
+    const angularVel = body.angularVelocity;
     this.rocket.freeze();
+    this.rocket.enterGroundPivot();
+    this.settle = createSettle(this.rocket.sprite.angle, angularVel, SETTLE_CONFIG);
+    this.phase = 'settling';
+  }
+
+  private updateSettling(delta: number): void {
+    this.settle = stepSettle(this.settle, delta, SETTLE_CONFIG);
+    this.rocket.setAngle(this.settle.angleDeg);
+
+    if (this.settle.status === 'upright') {
+      this.finishRun({ outcome: 'landed' });
+    } else if (this.settle.status === 'tipped') {
+      this.finishRun({ outcome: 'crashed', reason: 'tipped-over' });
+    }
+  }
+
+  private finishRun(result: RunResult): void {
+    this.phase = 'ended';
     if (result.outcome === 'crashed') {
       this.rocket.markCrashed();
       this.cameras.main.shake(250, 0.01);

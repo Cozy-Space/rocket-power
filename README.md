@@ -18,8 +18,10 @@ npm run dev        # http://localhost:5173
 | Enter / Space | Launch from the title screen              |
 
 Rules: gravity pulls you down, fuel drains while thrusting (empty tank = glide only).
-Touching terrain anywhere but the pad — or the pad too fast or tilted — is a crash.
-Land upright and slow on the green pad to win; your time is shown on touchdown.
+Touching terrain anywhere but the pad — or the pad too fast — is a crash. Surviving
+the touchdown isn't winning yet: the rocket keeps settling, rocking on its base.
+Land gently and near-upright and it wobbles back to standing; come down too tilted
+(or spinning) and it tips over. Your time is taken at touchdown.
 
 ## Scripts
 
@@ -35,7 +37,7 @@ Land upright and slow on the green pad to win; your time is shown on touchdown.
 
 - **Phaser 3** (pinned `^3.90.0` — npm `latest` is Phaser 4, a different API) + TypeScript + Vite.
 - Scene flow: `boot` (generates placeholder textures) → `preload` → `title` → `game` + `ui` (parallel overlay scene).
-- Pure, Phaser-free game rules live in `src/game/rules/` (fuel, landing evaluation, run timer) and are unit-tested with Vitest.
+- Pure, Phaser-free game rules live in `src/game/rules/` (fuel, touchdown evaluation, tip-over settle simulation, run timer) and are unit-tested with Vitest.
 - All tunables (gravity, thrust, fuel, landing thresholds) live in `src/config.ts`.
 - Cross-scene events (`src/game/events.ts`) go through the global `game.events` emitter so they survive scene restarts.
 - Known Arcade-physics gotcha: collide callbacks run _after_ velocity is zeroed, so `GameScene`

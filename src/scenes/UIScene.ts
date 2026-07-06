@@ -8,7 +8,7 @@ const CRASH_MESSAGES: Record<CrashReason, string> = {
   'side-impact': 'You hit the wall!',
   'not-on-pad': 'You missed the pad!',
   'too-fast': 'You came in too hot!',
-  'bad-angle': 'You tipped over!',
+  'tipped-over': 'The rocket tipped over!',
 };
 
 const FUEL_BAR_WIDTH = 220;

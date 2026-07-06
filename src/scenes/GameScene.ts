@@ -3,9 +3,9 @@ import { AssetKeys, TILESET_NAME } from '../assets/manifest';
 import {
   ANGULAR_VELOCITY,
   FUEL_BURN_RATE,
-  FUEL_CAPACITY,
   HUD_UPDATE_INTERVAL_MS,
   LANDING_THRESHOLDS,
+  LEVELS,
   SETTLE_CONFIG,
   SETTLE_TIME_SCALE,
   THRUST_ACCEL,
@@ -34,6 +34,7 @@ export class GameScene extends Phaser.Scene {
    */
   private lastVelocity = new Phaser.Math.Vector2();
   private phase: RunPhase = 'flying';
+  private levelIndex = 0;
   private settle!: SettleState;
   /** Base-pivot position of the sprite at the moment of touchdown. */
   private settleOrigin = new Phaser.Math.Vector2();
@@ -45,14 +46,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    const map = this.make.tilemap({ key: AssetKeys.Level1 });
+    const data = (this.scene.settings.data ?? {}) as { levelIndex?: number };
+    this.levelIndex = Phaser.Math.Clamp(data.levelIndex ?? 0, 0, LEVELS.length - 1);
+    this.registry.set('levelIndex', this.levelIndex);
+    const level = LEVELS[this.levelIndex];
+
+    const map = this.make.tilemap({ key: level.key });
     const tileset = map.addTilesetImage(TILESET_NAME, AssetKeys.CaveTiles);
     if (!tileset) {
-      throw new Error(`Tileset '${TILESET_NAME}' not found in level '${AssetKeys.Level1}'`);
+      throw new Error(`Tileset '${TILESET_NAME}' not found in level '${level.key}'`);
     }
     const terrain = map.createLayer('terrain', tileset);
     if (!terrain) {
-      throw new Error(`Tile layer 'terrain' not found in level '${AssetKeys.Level1}'`);
+      throw new Error(`Tile layer 'terrain' not found in level '${level.key}'`);
     }
     terrain.setCollisionByExclusion([-1]);
 
@@ -65,7 +71,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.rocket.sprite, true, 0.08, 0.08);
 
     this.cursors = this.input.keyboard!.createCursorKeys();
-    this.fuel = createFuel(FUEL_CAPACITY);
+    this.fuel = createFuel(level.fuel);
     // Started on the first update: this.time.now is stale during create()
     // right after scene start, which would add the boot time to the run.
     this.timer = new RunTimer();

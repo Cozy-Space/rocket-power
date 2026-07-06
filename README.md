@@ -10,12 +10,17 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-| Key           | Action                                    |
-| ------------- | ----------------------------------------- |
-| ↑ (hold)      | Thrust in the direction the rocket points |
-| ← / →         | Rotate                                    |
-| R             | Restart the run                           |
-| Enter / Space | Launch from the title screen              |
+| Key           | Action                                                 |
+| ------------- | ------------------------------------------------------ |
+| ↑ (hold)      | Thrust in the direction the rocket points              |
+| ← / →         | Rotate                                                 |
+| R             | Restart the run                                        |
+| Enter / Space | Launch from the title screen; next level after landing |
+| 1–2           | Choose a level on the title screen                     |
+
+Two levels ship today: an open training cave, then a narrow serpentine where every
+corridor ends in a wall — manage your speed or become one with the rock. Levels are
+defined in `LEVELS` in `src/config.ts` (per-level fuel) and progress sequentially.
 
 Rules: gravity pulls you down, fuel drains while thrusting (empty tank = glide only).
 Touching terrain anywhere but the pad — or the pad too fast — is a crash. Surviving

@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH } from '../config';
+import { GAME_HEIGHT, GAME_WIDTH, LEVELS } from '../config';
+
+const DIGIT_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'];
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -23,7 +25,8 @@ export class TitleScene extends Phaser.Scene {
         cx,
         GAME_HEIGHT * 0.5,
         'Fly through the cave and land softly on the pad.\n\n' +
-          '↑  hold to thrust      ←/→  rotate      R  restart',
+          '↑  hold to thrust      ←/→  rotate      R  restart\n\n' +
+          `1-${LEVELS.length}  choose level`,
         {
           fontFamily: 'monospace',
           fontSize: '24px',
@@ -43,7 +46,14 @@ export class TitleScene extends Phaser.Scene {
 
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 700, yoyo: true, repeat: -1 });
 
-    this.input.keyboard?.once('keydown-ENTER', () => this.scene.start('game'));
-    this.input.keyboard?.once('keydown-SPACE', () => this.scene.start('game'));
+    this.input.keyboard?.once('keydown-ENTER', () => this.launch(0));
+    this.input.keyboard?.once('keydown-SPACE', () => this.launch(0));
+    LEVELS.forEach((_, i) => {
+      this.input.keyboard?.once(`keydown-${DIGIT_KEYS[i]}`, () => this.launch(i));
+    });
+  }
+
+  private launch(levelIndex: number): void {
+    this.scene.start('game', { levelIndex });
   }
 }

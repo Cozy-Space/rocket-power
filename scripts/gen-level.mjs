@@ -1,165 +1,202 @@
 #!/usr/bin/env node
 /**
- * Bootstrap level generator: converts the ASCII map below into a
- * Tiled-compatible JSON map (public/assets/levels/level-01.json) and writes
- * the tileset image (public/assets/tiles/cave-tiles.png) so the level opens
+ * Bootstrap level generator: converts the ASCII maps below into
+ * Tiled-compatible JSON maps (public/assets/levels/level-NN.json) and writes
+ * the tileset image (public/assets/tiles/cave-tiles.png) so the levels open
  * in Tiled without warnings.
  *
  * Legend:  # rock   = landing pad surface   . air   S player spawn
  * Each ASCII cell becomes a 2x2 block of 64px tiles.
  *
- * This script is only needed to (re)bootstrap a level. Once you edit
- * level-01.json in Tiled, the JSON file is the source of truth.
+ * Usage: node scripts/gen-level.mjs [levelNumber]
+ * Without an argument ALL levels are regenerated — careful: once a level has
+ * been edited in Tiled, its JSON is the source of truth; regenerating
+ * overwrites it. Pass a level number to write only that one.
  */
 import { deflateSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ASCII_MAP = [
-  '##############################',
-  '#............#####...........#',
-  '#.S..........#####...........#',
-  '#............#####...........#',
-  '#............#####...........#',
-  '#............#####...........#',
-  '#............................#',
-  '#............................#',
-  '#............................#',
-  '#...................####.....#',
-  '#...................####.....#',
-  '#########...........####.....#',
-  '#########...........####.....#',
-  '#########...........####.....#',
-  '#########...........####.....#',
-  '#########...........####====.#',
-  '##############################',
+const LEVELS = [
+  {
+    file: 'level-01.json',
+    ascii: [
+      '##############################',
+      '#............#####...........#',
+      '#.S..........#####...........#',
+      '#............#####...........#',
+      '#............#####...........#',
+      '#............#####...........#',
+      '#............................#',
+      '#............................#',
+      '#............................#',
+      '#...................####.....#',
+      '#...................####.....#',
+      '#########...........####.....#',
+      '#########...........####.....#',
+      '#########...........####.....#',
+      '#########...........####.....#',
+      '#########...........####====.#',
+      '##############################',
+    ],
+  },
+  {
+    // Narrow serpentine: every corridor ends in a wall or floor, so momentum
+    // must be managed — brake before the drop shafts, crawl the tight turns.
+    file: 'level-02.json',
+    ascii: [
+      '##############################',
+      '#...........................##',
+      '#.S.........................##',
+      '#....#####################..##',
+      '#....#####################..##',
+      '##########################..##',
+      '##########################..##',
+      '##..........................##',
+      '##..........................##',
+      '##..##########################',
+      '##..##########################',
+      '##..##########################',
+      '##..################........##',
+      '##..........................##',
+      '##..........................##',
+      '######################======##',
+      '##############################',
+    ],
+  },
 ];
 
 const SCALE = 2;
 const TILE = 64;
 const GID = { '#': 1, '=': 2, '.': 0, S: 0 };
 
-const rows = ASCII_MAP.length;
-const cols = ASCII_MAP[0].length;
-for (const [i, row] of ASCII_MAP.entries()) {
-  if (row.length !== cols) throw new Error(`Row ${i} has length ${row.length}, expected ${cols}`);
-  if (![...row].every((ch) => ch in GID)) throw new Error(`Row ${i} has unknown characters`);
-}
+function buildMap(ascii, name) {
+  const rows = ascii.length;
+  const cols = ascii[0].length;
+  for (const [i, row] of ascii.entries()) {
+    if (row.length !== cols)
+      throw new Error(`${name} row ${i} has length ${row.length}, expected ${cols}`);
+    if (![...row].every((ch) => ch in GID))
+      throw new Error(`${name} row ${i} has unknown characters`);
+  }
 
-const width = cols * SCALE;
-const height = rows * SCALE;
+  const width = cols * SCALE;
+  const height = rows * SCALE;
 
-// --- tile layer data ---------------------------------------------------------
-const data = [];
-let spawnCell = null;
-const padCells = [];
-for (let r = 0; r < rows; r++) {
-  for (let s = 0; s < SCALE; s++) {
-    for (let c = 0; c < cols; c++) {
-      const ch = ASCII_MAP[r][c];
-      if (ch === 'S' && s === 0) spawnCell = { c, r };
-      if (ch === '=' && s === 0) padCells.push({ c, r });
-      for (let t = 0; t < SCALE; t++) data.push(GID[ch]);
+  const data = [];
+  let spawnCell = null;
+  const padCells = [];
+  for (let r = 0; r < rows; r++) {
+    for (let s = 0; s < SCALE; s++) {
+      for (let c = 0; c < cols; c++) {
+        const ch = ascii[r][c];
+        if (ch === 'S' && s === 0) spawnCell = { c, r };
+        if (ch === '=' && s === 0) padCells.push({ c, r });
+        for (let t = 0; t < SCALE; t++) data.push(GID[ch]);
+      }
     }
   }
+  if (!spawnCell) throw new Error(`${name} needs exactly one S (spawn)`);
+  if (padCells.length === 0) throw new Error(`${name} needs at least one = (landing pad)`);
+
+  const spawn = {
+    x: (spawnCell.c * SCALE + 1) * TILE,
+    y: (spawnCell.r * SCALE + 1) * TILE,
+  };
+  const padMinC = Math.min(...padCells.map((p) => p.c));
+  const padMaxC = Math.max(...padCells.map((p) => p.c));
+  const padTopR = Math.min(...padCells.map((p) => p.r));
+  // Thin evaluation band across the pad's top face; the rocket's bottom-center
+  // must be inside it at the moment of touchdown.
+  const padRect = {
+    x: padMinC * SCALE * TILE,
+    y: padTopR * SCALE * TILE - 32,
+    width: (padMaxC - padMinC + 1) * SCALE * TILE,
+    height: 40,
+  };
+
+  return { width, height, data, spawn, padRect };
 }
-if (!spawnCell) throw new Error('Map needs exactly one S (spawn)');
-if (padCells.length === 0) throw new Error('Map needs at least one = (landing pad)');
 
-// --- markers -----------------------------------------------------------------
-const spawn = {
-  x: (spawnCell.c * SCALE + 1) * TILE,
-  y: (spawnCell.r * SCALE + 1) * TILE,
-};
-const padMinC = Math.min(...padCells.map((p) => p.c));
-const padMaxC = Math.max(...padCells.map((p) => p.c));
-const padTopR = Math.min(...padCells.map((p) => p.r));
-// Thin evaluation band across the pad's top face; the rocket's bottom-center
-// must be inside it at the moment of touchdown.
-const padRect = {
-  x: padMinC * SCALE * TILE,
-  y: padTopR * SCALE * TILE - 32,
-  width: (padMaxC - padMinC + 1) * SCALE * TILE,
-  height: 40,
-};
-
-const map = {
-  compressionlevel: -1,
-  type: 'map',
-  version: '1.10',
-  tiledversion: '1.10.2',
-  orientation: 'orthogonal',
-  renderorder: 'right-down',
-  infinite: false,
-  width,
-  height,
-  tilewidth: TILE,
-  tileheight: TILE,
-  nextlayerid: 3,
-  nextobjectid: 3,
-  layers: [
-    {
-      id: 1,
-      name: 'terrain',
-      type: 'tilelayer',
-      width,
-      height,
-      x: 0,
-      y: 0,
-      opacity: 1,
-      visible: true,
-      data,
-    },
-    {
-      id: 2,
-      name: 'markers',
-      type: 'objectgroup',
-      draworder: 'topdown',
-      x: 0,
-      y: 0,
-      opacity: 1,
-      visible: true,
-      objects: [
-        {
-          id: 1,
-          name: 'spawn',
-          type: '',
-          point: true,
-          rotation: 0,
-          visible: true,
-          x: spawn.x,
-          y: spawn.y,
-          width: 0,
-          height: 0,
-        },
-        {
-          id: 2,
-          name: 'landing-pad',
-          type: '',
-          rotation: 0,
-          visible: true,
-          ...padRect,
-        },
-      ],
-    },
-  ],
-  tilesets: [
-    {
-      firstgid: 1,
-      name: 'cave',
-      image: '../tiles/cave-tiles.png',
-      imagewidth: 128,
-      imageheight: 64,
-      columns: 2,
-      tilecount: 2,
-      tilewidth: TILE,
-      tileheight: TILE,
-      margin: 0,
-      spacing: 0,
-    },
-  ],
-};
+function tiledJson({ width, height, data, spawn, padRect }) {
+  return {
+    compressionlevel: -1,
+    type: 'map',
+    version: '1.10',
+    tiledversion: '1.10.2',
+    orientation: 'orthogonal',
+    renderorder: 'right-down',
+    infinite: false,
+    width,
+    height,
+    tilewidth: TILE,
+    tileheight: TILE,
+    nextlayerid: 3,
+    nextobjectid: 3,
+    layers: [
+      {
+        id: 1,
+        name: 'terrain',
+        type: 'tilelayer',
+        width,
+        height,
+        x: 0,
+        y: 0,
+        opacity: 1,
+        visible: true,
+        data,
+      },
+      {
+        id: 2,
+        name: 'markers',
+        type: 'objectgroup',
+        draworder: 'topdown',
+        x: 0,
+        y: 0,
+        opacity: 1,
+        visible: true,
+        objects: [
+          {
+            id: 1,
+            name: 'spawn',
+            type: '',
+            point: true,
+            rotation: 0,
+            visible: true,
+            x: spawn.x,
+            y: spawn.y,
+            width: 0,
+            height: 0,
+          },
+          {
+            id: 2,
+            name: 'landing-pad',
+            type: '',
+            rotation: 0,
+            visible: true,
+            ...padRect,
+          },
+        ],
+      },
+    ],
+    tilesets: [
+      {
+        firstgid: 1,
+        name: 'cave',
+        image: '../tiles/cave-tiles.png',
+        imagewidth: 128,
+        imageheight: 64,
+        columns: 2,
+        tilecount: 2,
+        tilewidth: TILE,
+        tileheight: TILE,
+        margin: 0,
+        spacing: 0,
+      },
+    ],
+  };
+}
 
 // --- minimal PNG writer (RGBA, no filters) -----------------------------------
 function crc32(buf) {
@@ -228,13 +265,21 @@ function paintTiles(set) {
 
 // --- write outputs -------------------------------------------------------------
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const levelPath = join(root, 'public/assets/levels/level-01.json');
 const tilesPath = join(root, 'public/assets/tiles/cave-tiles.png');
-mkdirSync(dirname(levelPath), { recursive: true });
-mkdirSync(dirname(tilesPath), { recursive: true });
-writeFileSync(levelPath, JSON.stringify(map));
-writePng(tilesPath, 128, 64, paintTiles);
+const only = process.argv[2] ? Number(process.argv[2]) : null;
 
-console.log(`Wrote ${levelPath} (${width}x${height} tiles)`);
+for (const [index, level] of LEVELS.entries()) {
+  if (only !== null && index + 1 !== only) continue;
+  const built = buildMap(level.ascii, level.file);
+  const levelPath = join(root, 'public/assets/levels', level.file);
+  mkdirSync(dirname(levelPath), { recursive: true });
+  writeFileSync(levelPath, JSON.stringify(tiledJson(built)));
+  console.log(`Wrote ${levelPath} (${built.width}x${built.height} tiles)`);
+  console.log(
+    `  Spawn: (${built.spawn.x}, ${built.spawn.y})  Pad: ${JSON.stringify(built.padRect)}`,
+  );
+}
+
+mkdirSync(dirname(tilesPath), { recursive: true });
+writePng(tilesPath, 128, 64, paintTiles);
 console.log(`Wrote ${tilesPath}`);
-console.log(`Spawn: (${spawn.x}, ${spawn.y})  Pad: ${JSON.stringify(padRect)}`);

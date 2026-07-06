@@ -1,3 +1,4 @@
+import { AssetKeys, type AssetKey } from './assets/manifest';
 import type { SettleConfig } from './game/rules/settle';
 import type { LandingThresholds } from './game/rules/types';
 
@@ -14,10 +15,20 @@ export const THRUST_ACCEL = 380;
 /** Rotation speed in deg/s while Left/Right is held. */
 export const ANGULAR_VELOCITY = 150;
 
-/** Fuel units; drains while thrusting. */
-export const FUEL_CAPACITY = 100;
 /** Fuel units burned per second of thrust. */
 export const FUEL_BURN_RATE = 5;
+
+export interface LevelDef {
+  key: AssetKey;
+  /** Fuel units for this level; tighter levels need more careful burns. */
+  fuel: number;
+}
+
+/** Ordered level progression. */
+export const LEVELS: LevelDef[] = [
+  { key: AssetKeys.Level1, fuel: 100 },
+  { key: AssetKeys.Level2, fuel: 220 },
+];
 
 export const LANDING_THRESHOLDS: LandingThresholds = {
   /** Max impact speed in px/s the rocket survives on the pad. */

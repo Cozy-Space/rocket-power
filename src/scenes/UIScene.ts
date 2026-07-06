@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH } from '../config';
+import { GAME_HEIGHT, GAME_WIDTH, LEVELS } from '../config';
 import { EVT_HUD_UPDATE, EVT_RUN_ENDED, type HudUpdate, type RunEnded } from '../game/events';
 import type { CrashReason } from '../game/rules/types';
 import { RunTimer } from '../game/rules/timer';
@@ -20,14 +20,21 @@ export class UIScene extends Phaser.Scene {
   private overlay!: Phaser.GameObjects.Container;
   private overlayTitle!: Phaser.GameObjects.Text;
   private overlayDetail!: Phaser.GameObjects.Text;
+  private landedWithNext = false;
 
   constructor() {
     super('ui');
   }
 
+  private get levelIndex(): number {
+    return (this.registry.get('levelIndex') as number | undefined) ?? 0;
+  }
+
   create(): void {
     const style = { fontFamily: 'monospace', fontSize: '20px', color: '#dfe6ee' };
+    this.landedWithNext = false;
 
+    this.add.text(GAME_WIDTH - 24, 20, `LEVEL ${this.levelIndex + 1}`, style).setOrigin(1, 0);
     this.add.text(24, 20, 'FUEL', style);
     this.add
       .rectangle(96, 30, FUEL_BAR_WIDTH + 4, 18)
@@ -56,7 +63,10 @@ export class UIScene extends Phaser.Scene {
       this.game.events.off(EVT_RUN_ENDED, this.onRunEnded, this);
     });
 
-    this.input.keyboard?.on('keydown-R', () => this.restartRun());
+    this.input.keyboard?.on('keydown-R', () => this.startLevel(this.levelIndex));
+    this.input.keyboard?.on('keydown-ENTER', () => {
+      if (this.landedWithNext) this.startLevel(this.levelIndex + 1);
+    });
   }
 
   private onHudUpdate(hud: HudUpdate): void {
@@ -68,8 +78,13 @@ export class UIScene extends Phaser.Scene {
 
   private onRunEnded({ result, elapsedMs }: RunEnded): void {
     if (result.outcome === 'landed') {
+      this.landedWithNext = this.levelIndex + 1 < LEVELS.length;
       this.overlayTitle.setText('LANDED!').setColor('#48bb78');
-      this.overlayDetail.setText(`Time: ${RunTimer.format(elapsedMs)}\nPress R to fly again`);
+      this.overlayDetail.setText(
+        this.landedWithNext
+          ? `Time: ${RunTimer.format(elapsedMs)}\nENTER: next level    R: retry`
+          : `Time: ${RunTimer.format(elapsedMs)}\nAll levels complete! R: fly again`,
+      );
     } else {
       this.overlayTitle.setText('CRASHED').setColor('#ff5a5a');
       this.overlayDetail.setText(`${CRASH_MESSAGES[result.reason]}\nPress R to retry`);
@@ -77,8 +92,8 @@ export class UIScene extends Phaser.Scene {
     this.overlay.setVisible(true);
   }
 
-  private restartRun(): void {
-    this.scene.get('game').scene.restart();
+  private startLevel(levelIndex: number): void {
+    this.scene.get('game').scene.restart({ levelIndex });
     this.scene.restart();
   }
 }

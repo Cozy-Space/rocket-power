@@ -48,6 +48,16 @@ const spr = s.children.list.find((c) => c.texture && c.texture.key === 'rocket')
    built high, the rocket drifts into the right wall → `side-impact` before touchdown).
 4. **Timer sanity**: screenshot ~300ms after Enter — HUD TIME must read ~00:00.x, not seconds.
 
+## Level 2 (narrow serpentine)
+
+Start it with `press('Digit2')` on the title screen. A working waypoint pilot
+(cruise/descend legs with brake-before-transition) lives in the scratchpad pattern
+`level2-pilot.mjs`; route: top corridor y≈270 → right shaft x≈3440 → middle corridor
+y≈1010 flown LEFT → left shaft x≈390 → bottom corridor y≈1780 → pad. Key: finish each
+cruise leg with |vx| < ~120 or the wall at the corridor end kills you. Full run ≈ 63s.
+Progression: land level 1 → ENTER loads level 2 (check `registry.get('levelIndex')`);
+R after a level-2 crash must stay on level 2.
+
 ## Gotchas
 
 - Level geometry (for autopilot targets) comes from `scripts/gen-level.mjs`'s ASCII map × 2 × 64px.

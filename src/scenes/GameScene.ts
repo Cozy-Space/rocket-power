@@ -7,6 +7,7 @@ import {
   HUD_UPDATE_INTERVAL_MS,
   LANDING_THRESHOLDS,
   SETTLE_CONFIG,
+  SETTLE_TIME_SCALE,
   THRUST_ACCEL,
 } from '../config';
 import { EVT_HUD_UPDATE, EVT_RUN_ENDED, type HudUpdate, type RunEnded } from '../game/events';
@@ -161,7 +162,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateSettling(delta: number): void {
-    this.settle = stepSettle(this.settle, delta, SETTLE_CONFIG);
+    this.settle = stepSettle(this.settle, delta * SETTLE_TIME_SCALE, SETTLE_CONFIG);
     this.rocket.sprite.setPosition(
       this.settleOrigin.x + this.settle.slideOffset,
       this.settleOrigin.y - this.settle.height,

@@ -28,6 +28,12 @@ export const LANDING_THRESHOLDS: LandingThresholds = {
  * Post-touchdown ground physics: bouncing, skidding, and whether the rocket
  * rocks back upright or tips over — decided by simulation, not thresholds.
  */
+/**
+ * Playback speed of the ground sim: >1 makes the wobble/bounce/tip-over
+ * resolve faster without changing its outcome.
+ */
+export const SETTLE_TIME_SCALE = 1.8;
+
 export const SETTLE_CONFIG: SettleConfig = {
   criticalAngleDeg: 25,
   gravityGain: 600,

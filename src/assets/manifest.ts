@@ -24,9 +24,9 @@ export interface TilemapEntry {
 }
 
 export const imageManifest: ImageEntry[] = [
-  { key: AssetKeys.Rocket, source: 'generated' },
-  { key: AssetKeys.Flame, source: 'generated' },
-  { key: AssetKeys.CaveTiles, source: 'generated' },
+  { key: AssetKeys.Rocket, source: 'file', path: 'assets/sprites/rocket.png' },
+  { key: AssetKeys.Flame, source: 'file', path: 'assets/sprites/flame.png' },
+  { key: AssetKeys.CaveTiles, source: 'file', path: 'assets/tiles/cave-tiles.png' },
 ];
 
 export const tilemapManifest: TilemapEntry[] = [

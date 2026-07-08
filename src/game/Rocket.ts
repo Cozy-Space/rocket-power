@@ -24,11 +24,26 @@ export class Rocket {
     return this.sprite.body as Phaser.Physics.Arcade.Body;
   }
 
-  /** Applies thrust acceleration along the rocket's facing (sprite art points up). */
-  thrust(accel: number): void {
+  /**
+   * Applies thrust acceleration along the rocket's facing (sprite art points
+   * up), boosted up to `retroMultiplier` the more directly the facing opposes
+   * the current velocity — braking burns bite harder than prograde ones.
+   */
+  thrust(accel: number, retroMultiplier = 1): void {
+    const facing = this.sprite.rotation - Math.PI / 2;
+    const { velocity } = this.body;
+    const speed = velocity.length();
+    let effectiveAccel = accel;
+    if (speed > 0) {
+      const opposition =
+        -(Math.cos(facing) * velocity.x + Math.sin(facing) * velocity.y) / speed;
+      if (opposition > 0) {
+        effectiveAccel *= 1 + (retroMultiplier - 1) * opposition;
+      }
+    }
     this.sprite.scene.physics.velocityFromRotation(
-      this.sprite.rotation - Math.PI / 2,
-      accel,
+      facing,
+      effectiveAccel,
       this.body.acceleration,
     );
   }

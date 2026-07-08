@@ -11,9 +11,15 @@ export const TILE_SIZE = 64;
 /** Downward pull in px/s². */
 export const GRAVITY_Y = 200;
 /** Thrust acceleration in px/s² along the rocket's facing. Must beat gravity. */
-export const THRUST_ACCEL = 380;
+export const THRUST_ACCEL = 500;
 /** Rotation speed in deg/s while Left/Right is held. */
 export const ANGULAR_VELOCITY = 150;
+/**
+ * Thrust multiplier when burning against the current velocity (retro-burn),
+ * so turning around kills momentum faster. Scales with how directly the
+ * rocket faces its momentum: 1x perpendicular, full value dead against it.
+ */
+export const RETRO_THRUST_MULTIPLIER = 1.8;
 
 /** Fuel units burned per second of thrust. */
 export const FUEL_BURN_RATE = 5;

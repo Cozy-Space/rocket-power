@@ -6,6 +6,7 @@ import {
   HUD_UPDATE_INTERVAL_MS,
   LANDING_THRESHOLDS,
   LEVELS,
+  RETRO_THRUST_MULTIPLIER,
   SETTLE_CONFIG,
   SETTLE_TIME_SCALE,
   THRUST_ACCEL,
@@ -106,7 +107,7 @@ export class GameScene extends Phaser.Scene {
 
     const thrusting = this.cursors.up.isDown && hasFuel(this.fuel);
     if (thrusting) {
-      this.rocket.thrust(THRUST_ACCEL);
+      this.rocket.thrust(THRUST_ACCEL, RETRO_THRUST_MULTIPLIER);
       this.fuel = burn(this.fuel, delta, FUEL_BURN_RATE);
     } else {
       this.rocket.cutThrust();

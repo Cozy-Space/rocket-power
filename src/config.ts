@@ -26,8 +26,19 @@ export interface LevelDef {
 
 /** Ordered level progression. */
 export const LEVELS: LevelDef[] = [
-  { key: AssetKeys.Level1, fuel: 100 },
+  { key: AssetKeys.Level1, fuel: 40 },
   { key: AssetKeys.Level2, fuel: 220 },
+  { key: AssetKeys.Level3, fuel: 220 },
+  { key: AssetKeys.Level4, fuel: 80 },
+  { key: AssetKeys.Level5, fuel: 110 },
+  { key: AssetKeys.Level6, fuel: 120 },
+  { key: AssetKeys.Level7, fuel: 260 },
+  { key: AssetKeys.Level8, fuel: 130 },
+  { key: AssetKeys.Level9, fuel: 150 },
+  { key: AssetKeys.Level10, fuel: 160 },
+  { key: AssetKeys.Level11, fuel: 300 },
+  { key: AssetKeys.Level12, fuel: 180 },
+  { key: AssetKeys.Level13, fuel: 200 },
 ];
 
 export const LANDING_THRESHOLDS: LandingThresholds = {

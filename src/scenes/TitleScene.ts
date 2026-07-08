@@ -26,7 +26,7 @@ export class TitleScene extends Phaser.Scene {
         GAME_HEIGHT * 0.5,
         'Fly through the cave and land softly on the pad.\n\n' +
           '↑  hold to thrust      ←/→  rotate      R  restart\n\n' +
-          `1-${LEVELS.length}  choose level`,
+          `1-${Math.min(LEVELS.length, DIGIT_KEYS.length)}  choose level`,
         {
           fontFamily: 'monospace',
           fontSize: '24px',
@@ -48,7 +48,7 @@ export class TitleScene extends Phaser.Scene {
 
     this.input.keyboard?.once('keydown-ENTER', () => this.launch(0));
     this.input.keyboard?.once('keydown-SPACE', () => this.launch(0));
-    LEVELS.forEach((_, i) => {
+    LEVELS.slice(0, DIGIT_KEYS.length).forEach((_, i) => {
       this.input.keyboard?.once(`keydown-${DIGIT_KEYS[i]}`, () => this.launch(i));
     });
   }

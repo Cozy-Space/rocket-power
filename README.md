@@ -66,9 +66,11 @@ Open `level-01.json` directly in Tiled, edit, save — no export step needed.
 Conventions a level must follow:
 
 - Orthogonal map, 64×64 px tiles. Tileset **embedded** in the map, named `cave`
-  (6 tiles, image `../tiles/cave-tiles.png`): gid 1 = rock, gid 2 = pad surface,
+  (21 tiles, image `../tiles/cave-tiles.png`): gid 1 = rock, gid 2 = pad surface,
   gids 3–6 = triangle rock with the solid corner at bottom-left ◣, bottom-right ◢,
-  top-left ◤, top-right ◥.
+  top-left ◤, top-right ◥, gids 7–21 = border rock (rim per air-exposure mask).
+  Author levels with **plain rock only** — `GameScene` swaps in the border
+  variants at load time wherever rock faces air (`src/game/rules/borders.ts`).
 - Tile layer **`terrain`** — every non-empty tile is solid. Pad-surface tiles are part of the terrain.
   Triangle tiles collide only on their solid half; the empty half is flyable space.
 - Object layer **`markers`** with exactly two objects:

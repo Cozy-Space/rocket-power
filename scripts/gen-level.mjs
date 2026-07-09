@@ -315,7 +315,9 @@ const LEVELS = [
 const SCALE = 2;
 const TILE = 64;
 // Tile gids: 1 rock, 2 pad, 3-6 triangles (solid bottom-left, bottom-right,
-// top-left, top-right). Must match the tileset image and rules/triangles.ts.
+// top-left, top-right), 7-21 border rock (rim per exposure mask, N=1 E=2 S=4
+// W=8; picked at runtime — levels are authored with plain rock only). Must
+// match the tileset image, rules/triangles.ts and rules/borders.ts.
 const ROCK = 1;
 const PAD = 2;
 const TRI = { BL: 3, BR: 4, TL: 5, TR: 6 };
@@ -445,10 +447,10 @@ function tiledJson({ width, height, data, spawn, padRect }) {
         firstgid: 1,
         name: 'cave',
         image: '../tiles/cave-tiles.png',
-        imagewidth: 384,
+        imagewidth: 1344,
         imageheight: 64,
-        columns: 6,
-        tilecount: 6,
+        columns: 21,
+        tilecount: 21,
         tilewidth: TILE,
         tileheight: TILE,
         margin: 0,
@@ -542,6 +544,15 @@ function paintTiles(set) {
       }
     }
   }
+  // Border-rock tiles 7-21: rock with a rim on each exposed edge (mask 1-15).
+  for (let mask = 1; mask <= 15; mask++) {
+    const ox = 384 + (mask - 1) * 64;
+    fillRect(set, ox, 0, 64, 64, 0x4a5568);
+    if (mask & 1) fillRect(set, ox, 0, 64, 4, 0x2d3748); // north
+    if (mask & 2) fillRect(set, ox + 60, 0, 4, 64, 0x2d3748); // east
+    if (mask & 4) fillRect(set, ox, 60, 64, 4, 0x2d3748); // south
+    if (mask & 8) fillRect(set, ox, 0, 4, 64, 0x2d3748); // west
+  }
 }
 
 // --- write outputs -------------------------------------------------------------
@@ -565,6 +576,6 @@ for (const level of LEVELS) {
 // Bootstrap only: the shipped tileset is custom art, never overwrite it.
 if (!existsSync(tilesPath)) {
   mkdirSync(dirname(tilesPath), { recursive: true });
-  writePng(tilesPath, 128, 64, paintTiles);
+  writePng(tilesPath, 1344, 64, paintTiles);
   console.log(`Wrote ${tilesPath}`);
 }

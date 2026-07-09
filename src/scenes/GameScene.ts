@@ -15,6 +15,7 @@ import {
 import { EVT_HUD_UPDATE, EVT_RUN_ENDED, type HudUpdate, type RunEnded } from '../game/events';
 import { loadMarkers, type LevelMarkers } from '../game/LevelLoader';
 import { loadProgress, saveProgress } from '../game/progressStore';
+import { borderedGid, exposureMask, ROCK } from '../game/rules/borders';
 import { recordRun } from '../game/rules/progress';
 import { Rocket } from '../game/Rocket';
 import { burn, createFuel, fuelFraction, hasFuel, type FuelState } from '../game/rules/fuel';
@@ -65,6 +66,7 @@ export class GameScene extends Phaser.Scene {
     if (!terrain) {
       throw new Error(`Tile layer 'terrain' not found in level '${level.key}'`);
     }
+    this.applyRockBorders(terrain, map);
     terrain.setCollisionByExclusion([-1]);
 
     this.markers = loadMarkers(map);
@@ -142,6 +144,27 @@ export class GameScene extends Phaser.Scene {
     // Sample AFTER this frame's physics step: it becomes the pre-impact
     // velocity seen by next frame's collide callback.
     this.lastVelocity.copy(this.rocket.body.velocity);
+  }
+
+  /**
+   * Auto-tiling: swaps rock tiles that face air for the border variant with a
+   * rim on each exposed edge. Levels are authored with plain rock only, so
+   * this also covers Tiled-edited maps. Border gids count as full cover in
+   * the mask, so swapping in place is safe.
+   */
+  private applyRockBorders(
+    terrain: Phaser.Tilemaps.TilemapLayer,
+    map: Phaser.Tilemaps.Tilemap,
+  ): void {
+    const gidAt = (x: number, y: number): number => {
+      if (x < 0 || y < 0 || x >= map.width || y >= map.height) return ROCK;
+      return terrain.getTileAt(x, y)?.index ?? 0;
+    };
+    terrain.forEachTile((tile) => {
+      if (tile.index === ROCK) {
+        tile.index = borderedGid(exposureMask(gidAt, tile.x, tile.y));
+      }
+    });
   }
 
   /**

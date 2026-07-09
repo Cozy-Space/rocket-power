@@ -14,6 +14,8 @@ import {
 } from '../config';
 import { EVT_HUD_UPDATE, EVT_RUN_ENDED, type HudUpdate, type RunEnded } from '../game/events';
 import { loadMarkers, type LevelMarkers } from '../game/LevelLoader';
+import { loadProgress, saveProgress } from '../game/progressStore';
+import { recordRun } from '../game/rules/progress';
 import { Rocket } from '../game/Rocket';
 import { burn, createFuel, fuelFraction, hasFuel, type FuelState } from '../game/rules/fuel';
 import { evaluateTouchdown } from '../game/rules/landing';
@@ -224,7 +226,16 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.shake(250, 0.01);
     }
 
-    const payload: RunEnded = { result, elapsedMs: this.timer.elapsedMs(this.time.now) };
+    const elapsedMs = this.timer.elapsedMs(this.time.now);
+    const progress = recordRun(
+      loadProgress(),
+      this.levelIndex,
+      result.outcome === 'landed',
+      elapsedMs,
+    );
+    saveProgress(progress);
+
+    const payload: RunEnded = { result, elapsedMs, bestMs: progress[this.levelIndex].bestMs };
     this.game.events.emit(EVT_RUN_ENDED, payload);
   }
 }

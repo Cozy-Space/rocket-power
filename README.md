@@ -10,17 +10,19 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-| Key           | Action                                                 |
-| ------------- | ------------------------------------------------------ |
-| ↑ (hold)      | Thrust in the direction the rocket points              |
-| ← / →         | Rotate                                                 |
-| R             | Restart the run                                        |
-| Enter / Space | Launch from the title screen; next level after landing |
-| 1–2           | Choose a level on the title screen                     |
+| Key           | Action                                                            |
+| ------------- | ----------------------------------------------------------------- |
+| ↑ (hold)      | Thrust in the direction the rocket points                         |
+| ← / →         | Rotate                                                            |
+| R             | Restart the run                                                   |
+| Enter / Space | Continue at the lowest unfinished level; next level after landing |
+| L             | Open the level-select screen from the title                       |
+| Esc           | Back to the title screen during a run                             |
 
-Two levels ship today: an open training cave, then a narrow serpentine where every
-corridor ends in a wall — manage your speed or become one with the rock. Levels are
-defined in `LEVELS` in `src/config.ts` (per-level fuel) and progress sequentially.
+Thirteen levels ship today, from an open training cave to tight serpentines and
+chimneys — manage your speed or become one with the rock. Levels are defined in
+`LEVELS` in `src/config.ts` (per-level fuel) and progress sequentially; the
+level-select screen (arrows + ENTER, or click) shows each level's best time.
 
 Rules: gravity pulls you down, fuel drains while thrusting (empty tank = glide only).
 Touching terrain anywhere but the pad — or the pad too fast — is a crash. Surviving
@@ -44,12 +46,17 @@ Your time is taken at touchdown.
 ## Architecture
 
 - **Phaser 3** (pinned `^3.90.0` — npm `latest` is Phaser 4, a different API) + TypeScript + Vite.
-- Scene flow: `boot` (generates placeholder textures) → `preload` → `title` → `game` + `ui` (parallel overlay scene).
+- Scene flow: `boot` (generates placeholder textures) → `preload` → `title` → `level-select` → `game` + `ui` (parallel overlay scene).
 - Pure, Phaser-free game rules live in `src/game/rules/` (fuel, touchdown evaluation, tip-over settle simulation, run timer) and are unit-tested with Vitest.
 - All tunables (gravity, thrust, fuel, landing thresholds) live in `src/config.ts`.
 - Cross-scene events (`src/game/events.ts`) go through the global `game.events` emitter so they survive scene restarts.
 - Known Arcade-physics gotcha: collide callbacks run _after_ velocity is zeroed, so `GameScene`
   samples `lastVelocity` every frame and evaluates that in the collision handler.
+- Level progress (plays + best time, shown on the level-select screen) persists
+  sealed with a one-time pad: ciphertext and one pad share hide in localStorage under
+  cache-looking names, the other share in a cookie, and every save draws a fresh pad
+  (`src/game/rules/progress.ts` + `src/game/progressStore.ts`). This is deliberate
+  tamper _obfuscation_, not security — clearing any piece resets progress.
 
 ## Levels (Tiled)
 

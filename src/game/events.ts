@@ -17,4 +17,6 @@ export interface HudUpdate {
 export interface RunEnded {
   result: RunResult;
   elapsedMs: number;
+  /** Best landing time for this level after recording the run, if any. */
+  bestMs: number | null;
 }

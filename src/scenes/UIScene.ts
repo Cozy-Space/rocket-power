@@ -67,6 +67,11 @@ export class UIScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ENTER', () => {
       if (this.landedWithNext) this.startLevel(this.levelIndex + 1);
     });
+    this.input.keyboard?.on('keydown-ESC', () => {
+      this.scene.stop('game');
+      this.scene.stop();
+      this.scene.start('title');
+    });
   }
 
   private onHudUpdate(hud: HudUpdate): void {
@@ -76,14 +81,18 @@ export class UIScene extends Phaser.Scene {
     this.timerText.setText(`TIME  ${RunTimer.format(hud.elapsedMs)}`);
   }
 
-  private onRunEnded({ result, elapsedMs }: RunEnded): void {
+  private onRunEnded({ result, elapsedMs, bestMs }: RunEnded): void {
     if (result.outcome === 'landed') {
       this.landedWithNext = this.levelIndex + 1 < LEVELS.length;
       this.overlayTitle.setText('LANDED!').setColor('#48bb78');
+      const timeLine =
+        bestMs !== null && bestMs < elapsedMs
+          ? `Time: ${RunTimer.format(elapsedMs)}   (best ${RunTimer.format(bestMs)})`
+          : `Time: ${RunTimer.format(elapsedMs)}   ★ NEW BEST`;
       this.overlayDetail.setText(
         this.landedWithNext
-          ? `Time: ${RunTimer.format(elapsedMs)}\nENTER: next level    R: retry`
-          : `Time: ${RunTimer.format(elapsedMs)}\nAll levels complete! R: fly again`,
+          ? `${timeLine}\nENTER: next level    R: retry`
+          : `${timeLine}\nAll levels complete! R: fly again`,
       );
     } else {
       this.overlayTitle.setText('CRASHED').setColor('#ff5a5a');

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, LEVELS } from '../config';
-
-const DIGIT_KEYS = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'];
+import { loadProgress } from '../game/progressStore';
+import { firstUnfinished } from '../game/rules/progress';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -10,6 +10,7 @@ export class TitleScene extends Phaser.Scene {
 
   create(): void {
     const cx = GAME_WIDTH / 2;
+    const continueAt = firstUnfinished(loadProgress(), LEVELS.length);
 
     this.add
       .text(cx, GAME_HEIGHT * 0.3, 'ROCKET POWER', {
@@ -26,7 +27,7 @@ export class TitleScene extends Phaser.Scene {
         GAME_HEIGHT * 0.5,
         'Fly through the cave and land softly on the pad.\n\n' +
           '↑  hold to thrust      ←/→  rotate      R  restart\n\n' +
-          `1-${Math.min(LEVELS.length, DIGIT_KEYS.length)}  choose level`,
+          'L  select level',
         {
           fontFamily: 'monospace',
           fontSize: '24px',
@@ -37,20 +38,24 @@ export class TitleScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const prompt = this.add
-      .text(cx, GAME_HEIGHT * 0.72, 'Press ENTER to launch', {
+      .text(cx, GAME_HEIGHT * 0.72, `Press ENTER to fly LEVEL ${continueAt + 1}`, {
         fontFamily: 'monospace',
         fontSize: '28px',
         color: '#48bb78',
       })
-      .setOrigin(0.5);
-
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    prompt.on('pointerup', () => this.launch(continueAt));
     this.tweens.add({ targets: prompt, alpha: 0.3, duration: 700, yoyo: true, repeat: -1 });
 
-    this.input.keyboard?.once('keydown-ENTER', () => this.launch(0));
-    this.input.keyboard?.once('keydown-SPACE', () => this.launch(0));
-    LEVELS.slice(0, DIGIT_KEYS.length).forEach((_, i) => {
-      this.input.keyboard?.once(`keydown-${DIGIT_KEYS[i]}`, () => this.launch(i));
-    });
+    const levels = this.add
+      .text(16, 16, '▤ LEVELS', { fontFamily: 'monospace', fontSize: '22px', color: '#8899aa' })
+      .setInteractive({ useHandCursor: true });
+    levels.on('pointerup', () => this.scene.start('level-select'));
+
+    this.input.keyboard?.once('keydown-ENTER', () => this.launch(continueAt));
+    this.input.keyboard?.once('keydown-SPACE', () => this.launch(continueAt));
+    this.input.keyboard?.once('keydown-L', () => this.scene.start('level-select'));
   }
 
   private launch(levelIndex: number): void {

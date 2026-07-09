@@ -19,10 +19,11 @@ npm run dev        # http://localhost:5173
 | L             | Open the level-select screen from the title                       |
 | Esc           | Back to the title screen during a run                             |
 
-Thirteen levels ship today, from an open training cave to tight serpentines and
-chimneys — manage your speed or become one with the rock. Levels are defined in
-`LEVELS` in `src/config.ts` (per-level fuel) and progress sequentially; the
-level-select screen (arrows + ENTER, or click) shows each level's best time.
+Fourteen levels ship today, from an open training cave to tight serpentines,
+chimneys and a 45° chute — manage your speed or become one with the rock. Levels
+are defined in `LEVELS` in `src/config.ts` (per-level fuel) and progress
+sequentially; the level-select screen (arrows + ENTER, or click) shows each
+level's best time.
 
 Rules: gravity pulls you down, fuel drains while thrusting (empty tank = glide only).
 Touching terrain anywhere but the pad — or the pad too fast — is a crash. Surviving
@@ -69,8 +70,10 @@ Conventions a level must follow:
   (21 tiles, image `../tiles/cave-tiles.png`): gid 1 = rock, gid 2 = pad surface,
   gids 3–6 = triangle rock with the solid corner at bottom-left ◣, bottom-right ◢,
   top-left ◤, top-right ◥, gids 7–21 = border rock (rim per air-exposure mask).
-  Author levels with **plain rock only** — `GameScene` swaps in the border
-  variants at load time wherever rock faces air (`src/game/rules/borders.ts`).
+  Author levels with **plain rock only** — at load time `GameScene` first chamfers
+  every convex rock corner into a triangle (`src/game/rules/bevel.ts`), then swaps
+  in the border variants wherever rock faces air (`src/game/rules/borders.ts`).
+  Explicit triangle tiles are for larger authored slopes (e.g. levels 4 and 14).
 - Tile layer **`terrain`** — every non-empty tile is solid. Pad-surface tiles are part of the terrain.
   Triangle tiles collide only on their solid half; the empty half is flyable space.
 - Object layer **`markers`** with exactly two objects:

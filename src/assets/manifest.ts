@@ -22,6 +22,7 @@ export const AssetKeys = {
   Level11: 'level-11',
   Level12: 'level-12',
   Level13: 'level-13',
+  Level14: 'level-14',
 } as const;
 
 export type AssetKey = (typeof AssetKeys)[keyof typeof AssetKeys];
@@ -54,6 +55,7 @@ export const tilemapManifest: TilemapEntry[] = [
   { key: AssetKeys.Level11, path: 'assets/levels/level-11.json' },
   { key: AssetKeys.Level12, path: 'assets/levels/level-12.json' },
   { key: AssetKeys.Level13, path: 'assets/levels/level-13.json' },
+  { key: AssetKeys.Level14, path: 'assets/levels/level-14.json' },
 ];
 
 /** Tileset name used inside the Tiled map JSON. */

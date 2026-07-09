@@ -45,6 +45,7 @@ export const LEVELS: LevelDef[] = [
   { key: AssetKeys.Level11, fuel: 300 },
   { key: AssetKeys.Level12, fuel: 180 },
   { key: AssetKeys.Level13, fuel: 200 },
+  { key: AssetKeys.Level14, fuel: 140 },
 ];
 
 export const LANDING_THRESHOLDS: LandingThresholds = {

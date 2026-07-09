@@ -15,6 +15,7 @@ import {
 import { EVT_HUD_UPDATE, EVT_RUN_ENDED, type HudUpdate, type RunEnded } from '../game/events';
 import { loadMarkers, type LevelMarkers } from '../game/LevelLoader';
 import { loadProgress, saveProgress } from '../game/progressStore';
+import { bevelGid } from '../game/rules/bevel';
 import { borderedGid, exposureMask, ROCK } from '../game/rules/borders';
 import { recordRun } from '../game/rules/progress';
 import { Rocket } from '../game/Rocket';
@@ -66,6 +67,7 @@ export class GameScene extends Phaser.Scene {
     if (!terrain) {
       throw new Error(`Tile layer 'terrain' not found in level '${level.key}'`);
     }
+    this.bevelRockCorners(terrain, map);
     this.applyRockBorders(terrain, map);
     terrain.setCollisionByExclusion([-1]);
 
@@ -147,24 +149,51 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Auto-tiling: swaps rock tiles that face air for the border variant with a
-   * rim on each exposed edge. Levels are authored with plain rock only, so
-   * this also covers Tiled-edited maps. Border gids count as full cover in
-   * the mask, so swapping in place is safe.
+   * Auto-tiling pass 1: chamfers convex rock corners into triangle tiles.
+   * Masks are computed against the authored grid first and applied after, so
+   * neighboring corners bevel independently of iteration order.
+   */
+  private bevelRockCorners(
+    terrain: Phaser.Tilemaps.TilemapLayer,
+    map: Phaser.Tilemaps.Tilemap,
+  ): void {
+    const gidAt = this.gidReader(terrain, map);
+    const bevels: Array<[Phaser.Tilemaps.Tile, number]> = [];
+    terrain.forEachTile((tile) => {
+      if (tile.index !== ROCK) return;
+      const gid = bevelGid(exposureMask(gidAt, tile.x, tile.y));
+      if (gid !== null) bevels.push([tile, gid]);
+    });
+    for (const [tile, gid] of bevels) tile.index = gid;
+  }
+
+  /**
+   * Auto-tiling pass 2: swaps rock tiles that face air for the border variant
+   * with a rim on each exposed edge. Levels are authored with plain rock
+   * only, so both passes also cover Tiled-edited maps. Border gids count as
+   * full cover in the mask, so swapping in place is safe here.
    */
   private applyRockBorders(
     terrain: Phaser.Tilemaps.TilemapLayer,
     map: Phaser.Tilemaps.Tilemap,
   ): void {
-    const gidAt = (x: number, y: number): number => {
-      if (x < 0 || y < 0 || x >= map.width || y >= map.height) return ROCK;
-      return terrain.getTileAt(x, y)?.index ?? 0;
-    };
+    const gidAt = this.gidReader(terrain, map);
     terrain.forEachTile((tile) => {
       if (tile.index === ROCK) {
         tile.index = borderedGid(exposureMask(gidAt, tile.x, tile.y));
       }
     });
+  }
+
+  /** Grid accessor for the auto-tiling passes; the map edge reads as rock. */
+  private gidReader(
+    terrain: Phaser.Tilemaps.TilemapLayer,
+    map: Phaser.Tilemaps.Tilemap,
+  ): (x: number, y: number) => number {
+    return (x, y) => {
+      if (x < 0 || y < 0 || x >= map.width || y >= map.height) return ROCK;
+      return terrain.getTileAt(x, y)?.index ?? 0;
+    };
   }
 
   /**

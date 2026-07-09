@@ -14,6 +14,8 @@ export const GRAVITY_Y = 200;
 export const THRUST_ACCEL = 500;
 /** Rotation speed in deg/s while Left/Right is held. */
 export const ANGULAR_VELOCITY = 150;
+/** Speed cap in px/s; the body's velocity length is clamped to this. */
+export const MAX_SPEED = 1200;
 /**
  * Thrust multiplier when burning against the current velocity (retro-burn),
  * so turning around kills momentum faster. Scales with how directly the

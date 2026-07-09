@@ -6,6 +6,7 @@ import {
   HUD_UPDATE_INTERVAL_MS,
   LANDING_THRESHOLDS,
   LEVELS,
+  MAX_SPEED,
   RETRO_THRUST_MULTIPLIER,
   SETTLE_CONFIG,
   SETTLE_TIME_SCALE,
@@ -73,6 +74,7 @@ export class GameScene extends Phaser.Scene {
 
     this.markers = loadMarkers(map);
     this.rocket = new Rocket(this, this.markers.spawn.x, this.markers.spawn.y);
+    this.rocket.body.setMaxSpeed(MAX_SPEED);
     // Triangle tiles register contact only once the body reaches their solid
     // half, so the AABB overlap at first contact can approach a full tile.
     // The default bias (16) treats that as tunneling and skips separation —

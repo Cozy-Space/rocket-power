@@ -6,7 +6,9 @@
  * in Tiled without warnings.
  *
  * Legend:  # rock   = landing pad surface   . air   S player spawn
- * Each ASCII cell becomes a 2x2 block of 64px tiles.
+ *          ◣ ◢ ◤ ◥ triangle rock (solid corner where the glyph is solid)
+ * Each ASCII cell becomes a 2x2 block of 64px tiles; triangle cells expand
+ * into one full tile, one air tile and two triangle tiles along the diagonal.
  *
  * Usage: node scripts/gen-level.mjs [levelNumber]
  * Without an argument ALL levels are regenerated — careful: once a level has
@@ -69,7 +71,8 @@ const LEVELS = [
     // level-03 was reshaped in Tiled; its JSON is the source of truth and it
     // is intentionally absent here.
     // Plateau: open cavern warm-up — clear two floating slabs, then set down
-    // on a raised mesa instead of the cave floor.
+    // on a raised mesa. Slabs taper to diamond points and the mesa has sloped
+    // shoulders (triangle tiles), so near-misses stay near-misses.
     file: 'level-04.json',
     ascii: [
       '##############################',
@@ -78,12 +81,12 @@ const LEVELS = [
       '#............................#',
       '#............................#',
       '#............................#',
-      '#......#####.................#',
-      '#......#####.................#',
+      '#......◢###◣.................#',
+      '#......◥###◤.................#',
       '#............................#',
-      '#.............#####..........#',
-      '#.............#####..===.....#',
-      '#...................#######..#',
+      '#.............◢###◣..........#',
+      '#.............◥###◤..===.....#',
+      '#...................◢#####◣..#',
       '#...................#######..#',
       '#...................#######..#',
       '#...................#######..#',
@@ -311,7 +314,22 @@ const LEVELS = [
 
 const SCALE = 2;
 const TILE = 64;
-const GID = { '#': 1, '=': 2, '.': 0, S: 0 };
+// Tile gids: 1 rock, 2 pad, 3-6 triangles (solid bottom-left, bottom-right,
+// top-left, top-right). Must match the tileset image and rules/triangles.ts.
+const ROCK = 1;
+const PAD = 2;
+const TRI = { BL: 3, BR: 4, TL: 5, TR: 6 };
+// Each ASCII cell expands to [topLeft, topRight, bottomLeft, bottomRight].
+const BLOCKS = {
+  '#': [ROCK, ROCK, ROCK, ROCK],
+  '=': [PAD, PAD, PAD, PAD],
+  '.': [0, 0, 0, 0],
+  S: [0, 0, 0, 0],
+  '◣': [TRI.BL, 0, ROCK, TRI.BL],
+  '◢': [0, TRI.BR, TRI.BR, ROCK],
+  '◤': [ROCK, TRI.TL, TRI.TL, 0],
+  '◥': [TRI.TR, ROCK, 0, TRI.TR],
+};
 
 function buildMap(ascii, name) {
   const rows = ascii.length;
@@ -319,7 +337,7 @@ function buildMap(ascii, name) {
   for (const [i, row] of ascii.entries()) {
     if (row.length !== cols)
       throw new Error(`${name} row ${i} has length ${row.length}, expected ${cols}`);
-    if (![...row].every((ch) => ch in GID))
+    if (![...row].every((ch) => ch in BLOCKS))
       throw new Error(`${name} row ${i} has unknown characters`);
   }
 
@@ -335,7 +353,7 @@ function buildMap(ascii, name) {
         const ch = ascii[r][c];
         if (ch === 'S' && s === 0) spawnCell = { c, r };
         if (ch === '=' && s === 0) padCells.push({ c, r });
-        for (let t = 0; t < SCALE; t++) data.push(GID[ch]);
+        for (let t = 0; t < SCALE; t++) data.push(BLOCKS[ch][s * SCALE + t]);
       }
     }
   }
@@ -427,10 +445,10 @@ function tiledJson({ width, height, data, spawn, padRect }) {
         firstgid: 1,
         name: 'cave',
         image: '../tiles/cave-tiles.png',
-        imagewidth: 128,
+        imagewidth: 384,
         imageheight: 64,
-        columns: 2,
-        tilecount: 2,
+        columns: 6,
+        tilecount: 6,
         tilewidth: TILE,
         tileheight: TILE,
         margin: 0,
@@ -503,6 +521,27 @@ function paintTiles(set) {
   fillRect(set, 64, 0, 64, 10, 0x48bb78);
   fillRect(set, 72, 14, 12, 6, 0xf6e05e);
   fillRect(set, 108, 14, 12, 6, 0xf6e05e);
+  // Triangle tiles 3-6; unpainted pixels stay transparent.
+  const solid = [
+    (x, y) => y >= x, // bottom-left
+    (x, y) => x + y >= 64, // bottom-right
+    (x, y) => x + y <= 64, // top-left
+    (x, y) => y <= x, // top-right
+  ];
+  for (const [i, inside] of solid.entries()) {
+    const ox = 128 + i * 64;
+    for (let y = 0; y < 64; y++) {
+      for (let x = 0; x < 64; x++) {
+        if (!inside(x + 0.5, y + 0.5)) continue;
+        const nearHyp =
+          !inside(x + 4.5, y + 4.5) ||
+          !inside(x - 3.5, y + 4.5) ||
+          !inside(x + 4.5, y - 3.5) ||
+          !inside(x - 3.5, y - 3.5);
+        set(ox + x, y, nearHyp ? 0x2d3748 : 0x4a5568);
+      }
+    }
+  }
 }
 
 // --- write outputs -------------------------------------------------------------
@@ -510,8 +549,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const tilesPath = join(root, 'public/assets/tiles/cave-tiles.png');
 const only = process.argv[2] ? Number(process.argv[2]) : null;
 
-for (const [index, level] of LEVELS.entries()) {
-  if (only !== null && index + 1 !== only) continue;
+for (const level of LEVELS) {
+  // Match on the file's own number — the array has gaps (level-03 lives in Tiled).
+  if (only !== null && Number(level.file.match(/\d+/)[0]) !== only) continue;
   const built = buildMap(level.ascii, level.file);
   const levelPath = join(root, 'public/assets/levels', level.file);
   mkdirSync(dirname(levelPath), { recursive: true });

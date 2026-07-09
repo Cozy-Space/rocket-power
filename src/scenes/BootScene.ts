@@ -59,7 +59,10 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-  /** 128x64 texture with two 64x64 tiles: [0] rock, [1] landing pad surface. */
+  /**
+   * 384x64 texture with six 64x64 tiles: [0] rock, [1] landing pad surface,
+   * [2..5] triangle rock (solid bottom-left, bottom-right, top-left, top-right).
+   */
   private generateCaveTiles(): void {
     const g = this.add.graphics();
     // tile 0: rock
@@ -81,7 +84,19 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0xf6e05e);
     g.fillRect(72, 14, 12, 6);
     g.fillRect(108, 14, 12, 6);
-    g.generateTexture(AssetKeys.CaveTiles, 128, 64);
+    // tiles 2-5: triangle rock, one solid corner each
+    const triangles = [
+      [0, 0, 0, 64, 64, 64], // bottom-left
+      [64, 0, 0, 64, 64, 64], // bottom-right
+      [0, 0, 64, 0, 0, 64], // top-left
+      [0, 0, 64, 0, 64, 64], // top-right
+    ];
+    g.fillStyle(0x4a5568);
+    for (const [i, [ax, ay, bx, by, cx, cy]] of triangles.entries()) {
+      const ox = 128 + i * 64;
+      g.fillTriangle(ox + ax, ay, ox + bx, by, ox + cx, cy);
+    }
+    g.generateTexture(AssetKeys.CaveTiles, 384, 64);
     g.destroy();
   }
 }

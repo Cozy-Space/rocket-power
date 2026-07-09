@@ -10,12 +10,14 @@ import {
   SETTLE_CONFIG,
   SETTLE_TIME_SCALE,
   THRUST_ACCEL,
+  TILE_SIZE,
 } from '../config';
 import { EVT_HUD_UPDATE, EVT_RUN_ENDED, type HudUpdate, type RunEnded } from '../game/events';
 import { loadMarkers, type LevelMarkers } from '../game/LevelLoader';
 import { Rocket } from '../game/Rocket';
 import { burn, createFuel, fuelFraction, hasFuel, type FuelState } from '../game/rules/fuel';
 import { evaluateTouchdown } from '../game/rules/landing';
+import { rectOverlapsTriangle, TRIANGLE_TILES } from '../game/rules/triangles';
 import { createSettle, stepSettle, type SettleState } from '../game/rules/settle';
 import type { RunResult } from '../game/rules/types';
 import { RunTimer } from '../game/rules/timer';
@@ -65,7 +67,17 @@ export class GameScene extends Phaser.Scene {
 
     this.markers = loadMarkers(map);
     this.rocket = new Rocket(this, this.markers.spawn.x, this.markers.spawn.y);
-    this.physics.add.collider(this.rocket.sprite, terrain, () => this.onTerrainContact());
+    // Triangle tiles register contact only once the body reaches their solid
+    // half, so the AABB overlap at first contact can approach a full tile.
+    // The default bias (16) treats that as tunneling and skips separation —
+    // the rocket would fall straight through a triangle's solid half.
+    this.physics.world.TILE_BIAS = TILE_SIZE;
+    this.physics.add.collider(
+      this.rocket.sprite,
+      terrain,
+      () => this.onTerrainContact(),
+      (_sprite, tile) => this.touchesTile(tile),
+    );
 
     this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
@@ -128,6 +140,28 @@ export class GameScene extends Phaser.Scene {
     // Sample AFTER this frame's physics step: it becomes the pre-impact
     // velocity seen by next frame's collide callback.
     this.lastVelocity.copy(this.rocket.body.velocity);
+  }
+
+  /**
+   * Collision filter: Arcade physics collides AABBs, so a triangle tile only
+   * counts when the body actually reaches into its solid half — the empty
+   * half is flyable space. Square tiles always collide.
+   */
+  private touchesTile(tileObj: unknown): boolean {
+    const tile = tileObj as Phaser.Tilemaps.Tile;
+    const kind = TRIANGLE_TILES[tile.index];
+    if (!kind) return true;
+    const body = this.rocket.body;
+    return rectOverlapsTriangle(
+      kind,
+      {
+        left: body.left - tile.pixelX,
+        right: body.right - tile.pixelX,
+        top: body.top - tile.pixelY,
+        bottom: body.bottom - tile.pixelY,
+      },
+      tile.width,
+    );
   }
 
   private onTerrainContact(): void {

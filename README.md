@@ -59,8 +59,11 @@ Open `level-01.json` directly in Tiled, edit, save — no export step needed.
 Conventions a level must follow:
 
 - Orthogonal map, 64×64 px tiles. Tileset **embedded** in the map, named `cave`
-  (2 tiles: gid 1 = rock, gid 2 = pad surface, image `../tiles/cave-tiles.png`).
+  (6 tiles, image `../tiles/cave-tiles.png`): gid 1 = rock, gid 2 = pad surface,
+  gids 3–6 = triangle rock with the solid corner at bottom-left ◣, bottom-right ◢,
+  top-left ◤, top-right ◥.
 - Tile layer **`terrain`** — every non-empty tile is solid. Pad-surface tiles are part of the terrain.
+  Triangle tiles collide only on their solid half; the empty half is flyable space.
 - Object layer **`markers`** with exactly two objects:
   - a point named **`spawn`** — player start,
   - a rectangle named **`landing-pad`** — drawn as a thin band over the pad's top face
@@ -81,4 +84,5 @@ All placeholder art is generated at runtime (`BootScene`). To swap in real art, 
 
 Suggested free interim art until custom art exists: [Kenney](https://kenney.nl) (CC0) —
 _Space Shooter Redux_ for the rocket/flame, _Pixel Platformer_ or _Simplified Platformer Pack_
-for cave tiles (assemble two 64×64 tiles into a 128×64 `cave-tiles.png`, rock left, pad right).
+for cave tiles (assemble six 64×64 tiles into a 384×64 `cave-tiles.png`: rock, pad, then
+the four triangle-rock tiles ◣ ◢ ◤ ◥).

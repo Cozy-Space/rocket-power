@@ -1,8 +1,7 @@
 /**
- * Auto-tiling for rock borders: rock tiles with air on any side swap to a
- * border variant with a rim along each exposed edge (same rim as the triangle
- * hypotenuses). Levels are authored with plain rock only; GameScene applies
- * this at load time.
+ * Edge-exposure masks for rock tiles: which sides of a tile face air. Feeds
+ * the corner-beveling pass (see rules/bevel.ts); GameScene applies it at load
+ * time, so levels are authored with plain rock only.
  */
 
 export const AIR = 0;
@@ -13,10 +12,6 @@ export const EXPOSED_N = 1;
 export const EXPOSED_E = 2;
 export const EXPOSED_S = 4;
 export const EXPOSED_W = 8;
-
-/** First border-rock gid; mask m (1-15) lives at BORDER_FIRST_GID + m - 1. */
-export const BORDER_FIRST_GID = 7;
-export const BORDER_LAST_GID = BORDER_FIRST_GID + 14;
 
 /** Reads the gid at a tile coordinate; return AIR (or -1) for empty. */
 export type GidAt = (x: number, y: number) => number;
@@ -40,7 +35,7 @@ function coversEdge(neighborGid: number, dir: Dir): boolean {
       return dir === 's' || dir === 'e';
     case 6: // top-right: solid right + top edge
       return dir === 's' || dir === 'w';
-    default: // rock, pad, bordered rock
+    default: // rock, pad
       return true;
   }
 }
@@ -53,9 +48,4 @@ export function exposureMask(gidAt: GidAt, x: number, y: number): number {
   if (!coversEdge(gidAt(x, y + 1), 's')) mask |= EXPOSED_S;
   if (!coversEdge(gidAt(x - 1, y), 'w')) mask |= EXPOSED_W;
   return mask;
-}
-
-/** The gid a rock tile should render as, given its exposure mask. */
-export function borderedGid(mask: number): number {
-  return mask === 0 ? ROCK : BORDER_FIRST_GID + mask - 1;
 }

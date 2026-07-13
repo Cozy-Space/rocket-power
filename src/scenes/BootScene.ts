@@ -60,10 +60,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   /**
-   * 1344x64 texture with 21 64x64 tiles: [0] rock, [1] landing pad surface,
+   * 384x64 texture with 6 64x64 tiles: [0] rock, [1] landing pad surface,
    * [2..5] triangle rock (solid bottom-left, bottom-right, top-left,
-   * top-right), [6..20] border rock with a rim per exposure mask (N=1 E=2
-   * S=4 W=8, see rules/borders.ts).
+   * top-right).
    */
   private generateCaveTiles(): void {
     const g = this.add.graphics();
@@ -98,18 +97,7 @@ export class BootScene extends Phaser.Scene {
       const ox = 128 + i * 64;
       g.fillTriangle(ox + ax, ay, ox + bx, by, ox + cx, cy);
     }
-    // tiles 6-20: border rock, rim on each exposed edge (mask 1-15)
-    for (let mask = 1; mask <= 15; mask++) {
-      const ox = 384 + (mask - 1) * 64;
-      g.fillStyle(0x4a5568);
-      g.fillRect(ox, 0, 64, 64);
-      g.fillStyle(0x2d3748);
-      if (mask & 1) g.fillRect(ox, 0, 64, 4);
-      if (mask & 2) g.fillRect(ox + 60, 0, 4, 64);
-      if (mask & 4) g.fillRect(ox, 60, 64, 4);
-      if (mask & 8) g.fillRect(ox, 0, 4, 64);
-    }
-    g.generateTexture(AssetKeys.CaveTiles, 1344, 64);
+    g.generateTexture(AssetKeys.CaveTiles, 384, 64);
     g.destroy();
   }
 }

@@ -157,15 +157,15 @@
  "tileheight":64,
  "tilesets":[
         {
-         "columns":21,
+         "columns":6,
          "firstgid":1,
          "image":"..\/tiles\/cave-tiles.png",
          "imageheight":64,
-         "imagewidth":1344,
+         "imagewidth":384,
          "margin":0,
          "name":"cave",
          "spacing":0,
-         "tilecount":21,
+         "tilecount":6,
          "tileheight":64,
          "tilewidth":64
         }],

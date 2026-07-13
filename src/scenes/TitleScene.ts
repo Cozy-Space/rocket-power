@@ -26,7 +26,7 @@ export class TitleScene extends Phaser.Scene {
         cx,
         GAME_HEIGHT * 0.5,
         'Fly through the cave and land softly on the pad.\n\n' +
-          '↑  hold to thrust      ←/→  rotate      R  restart\n\n' +
+          '↑/W/I  hold to thrust      ←→/AD/JL  rotate      R  restart\n\n' +
           'L  select level',
         {
           fontFamily: 'monospace',

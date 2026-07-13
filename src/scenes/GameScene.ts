@@ -35,7 +35,7 @@ type RunPhase = 'flying' | 'settling' | 'ended';
 export class GameScene extends Phaser.Scene {
   private rocket!: Rocket;
   private markers!: LevelMarkers;
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private controls!: Record<'left' | 'right' | 'thrust', Phaser.Input.Keyboard.Key[]>;
   private fuel!: FuelState;
   private timer!: RunTimer;
   /**
@@ -94,7 +94,16 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.startFollow(this.rocket.sprite, true, 0.08, 0.08);
 
-    this.cursors = this.input.keyboard!.createCursorKeys();
+    const cursors = this.input.keyboard!.createCursorKeys();
+    const alias = this.input.keyboard!.addKeys('W,A,D,I,J,L') as Record<
+      string,
+      Phaser.Input.Keyboard.Key
+    >;
+    this.controls = {
+      left: [cursors.left, alias.A, alias.J],
+      right: [cursors.right, alias.D, alias.L],
+      thrust: [cursors.up, alias.W, alias.I],
+    };
     this.fuel = createFuel(level.fuel);
     // Started on the first update: this.time.now is stale during create()
     // right after scene start, which would add the boot time to the run.
@@ -128,15 +137,16 @@ export class GameScene extends Phaser.Scene {
       this.timer.start(time);
     }
 
-    if (this.cursors.left.isDown) {
+    const down = (keys: Phaser.Input.Keyboard.Key[]) => keys.some((k) => k.isDown);
+    if (down(this.controls.left)) {
       this.rocket.rotate(-ANGULAR_VELOCITY);
-    } else if (this.cursors.right.isDown) {
+    } else if (down(this.controls.right)) {
       this.rocket.rotate(ANGULAR_VELOCITY);
     } else {
       this.rocket.rotate(0);
     }
 
-    const thrusting = this.cursors.up.isDown && hasFuel(this.fuel);
+    const thrusting = down(this.controls.thrust) && hasFuel(this.fuel);
     if (thrusting) {
       this.rocket.thrust(THRUST_ACCEL, RETRO_THRUST_MULTIPLIER);
       this.fuel = burn(this.fuel, delta, FUEL_BURN_RATE);

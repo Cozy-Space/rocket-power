@@ -73,6 +73,8 @@ export class GameScene extends Phaser.Scene {
     }
     this.bevelRockCorners(terrain, map);
     terrain.setCollisionByExclusion([-1]);
+    // Glows along the rock/air silhouette (alpha edge), both sides; WebGL only.
+    terrain.postFX.addGlow(0x66ffcc, 4, 2);
 
     this.markers = loadMarkers(map);
     this.rocket = new Rocket(this, this.markers.spawn.x, this.markers.spawn.y);

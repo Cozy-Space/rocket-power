@@ -26,6 +26,12 @@ export const RETRO_THRUST_MULTIPLIER = 1.8;
 /** Fuel units burned per second of thrust. */
 export const FUEL_BURN_RATE = 5;
 
+/** Seconds of travel the camera looks ahead of the rocket's velocity. */
+export const CAMERA_LOOKAHEAD_S = 0.25;
+/** Per-axis cap on the lookahead offset in px, so the rocket stays on screen. */
+export const CAMERA_LOOKAHEAD_MAX_X = 250;
+export const CAMERA_LOOKAHEAD_MAX_Y = 150;
+
 export interface LevelDef {
   key: AssetKey;
   /** Fuel units for this level; tighter levels need more careful burns. */

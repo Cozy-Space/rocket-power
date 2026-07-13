@@ -2,6 +2,9 @@ import Phaser from 'phaser';
 import { AssetKeys, TILESET_NAME } from '../assets/manifest';
 import {
   ANGULAR_VELOCITY,
+  CAMERA_LOOKAHEAD_MAX_X,
+  CAMERA_LOOKAHEAD_MAX_Y,
+  CAMERA_LOOKAHEAD_S,
   FUEL_BURN_RATE,
   HUD_UPDATE_INTERVAL_MS,
   LANDING_THRESHOLDS,
@@ -108,6 +111,14 @@ export class GameScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (this.phase === 'ended') return;
+    // Look ahead of the velocity: followOffset is subtracted from the target,
+    // so a negative offset shifts the view toward where the rocket is going.
+    // The follow lerp (0.08) smooths the shift; no extra easing needed.
+    const v = this.rocket.body.velocity;
+    this.cameras.main.setFollowOffset(
+      -Phaser.Math.Clamp(v.x * CAMERA_LOOKAHEAD_S, -CAMERA_LOOKAHEAD_MAX_X, CAMERA_LOOKAHEAD_MAX_X),
+      -Phaser.Math.Clamp(v.y * CAMERA_LOOKAHEAD_S, -CAMERA_LOOKAHEAD_MAX_Y, CAMERA_LOOKAHEAD_MAX_Y),
+    );
     if (this.phase === 'settling') {
       this.updateSettling(delta);
       return;

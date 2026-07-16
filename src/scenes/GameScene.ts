@@ -20,7 +20,7 @@ import { EVT_HUD_UPDATE, EVT_RUN_ENDED, type HudUpdate, type RunEnded } from '..
 import { loadMarkers, type LevelMarkers } from '../game/LevelLoader';
 import { loadProgress, saveProgress } from '../game/progressStore';
 import { bevelGid } from '../game/rules/bevel';
-import { exposureMask, ROCK } from '../game/rules/borders';
+import { exposureMask, PAD, ROCK } from '../game/rules/borders';
 import { recordRun } from '../game/rules/progress';
 import { Rocket } from '../game/Rocket';
 import { burn, createFuel, fuelFraction, hasFuel, type FuelState } from '../game/rules/fuel';
@@ -74,7 +74,7 @@ export class GameScene extends Phaser.Scene {
     this.bevelRockCorners(terrain, map);
     terrain.setCollisionByExclusion([-1]);
     // Glows along the rock/air silhouette (alpha edge), both sides; WebGL only.
-    terrain.postFX.addGlow(0x66ffcc, 4, 2);
+    terrain.postFX.addGlow(0x354f64, 4, 2);
 
     this.markers = loadMarkers(map);
     this.rocket = new Rocket(this, this.markers.spawn.x, this.markers.spawn.y);
@@ -184,6 +184,12 @@ export class GameScene extends Phaser.Scene {
     const gidAt = this.gidReader(terrain, map);
     const bevels: Array<[Phaser.Tilemaps.Tile, number]> = [];
     terrain.forEachTile((tile) => {
+      // The pad's hazard-stripe art belongs on its surface only; buried pad
+      // tiles (pad directly above) render as plain rock.
+      if (tile.index === PAD && gidAt(tile.x, tile.y - 1) === PAD) {
+        bevels.push([tile, ROCK]);
+        return;
+      }
       if (tile.index !== ROCK) return;
       const gid = bevelGid(exposureMask(gidAt, tile.x, tile.y));
       if (gid !== null) bevels.push([tile, gid]);

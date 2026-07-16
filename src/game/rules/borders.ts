@@ -6,6 +6,7 @@
 
 export const AIR = 0;
 export const ROCK = 1;
+export const PAD = 2;
 
 /** Exposure bitmask bits, one per tile edge. */
 export const EXPOSED_N = 1;

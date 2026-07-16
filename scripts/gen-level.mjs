@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 /**
  * Bootstrap level generator: converts the ASCII maps below into
- * Tiled-compatible JSON maps (public/assets/levels/level-NN.json) and writes
- * the tileset image (public/assets/tiles/cave-tiles.png) so the levels open
- * in Tiled without warnings.
+ * Tiled-compatible JSON maps (public/assets/levels/level-NN.json). The
+ * tileset image the maps reference is painted by scripts/gen-tiles.mjs.
  *
  * Legend:  # rock   = landing pad surface   . air   S player spawn
  *          ◣ ◢ ◤ ◥ triangle rock (solid corner where the glyph is solid)
@@ -15,8 +14,7 @@
  * been edited in Tiled, its JSON is the source of truth; regenerating
  * overwrites it. Pass a level number to write only that one.
  */
-import { deflateSync } from 'node:zlib';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -483,95 +481,8 @@ function tiledJson({ width, height, data, spawn, padRect }) {
   };
 }
 
-// --- minimal PNG writer (RGBA, no filters) -----------------------------------
-function crc32(buf) {
-  let crc = 0xffffffff;
-  for (const byte of buf) {
-    crc ^= byte;
-    for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function pngChunk(type, payload) {
-  const chunk = Buffer.concat([Buffer.from(type, 'ascii'), payload]);
-  const out = Buffer.alloc(chunk.length + 8);
-  out.writeUInt32BE(payload.length, 0);
-  chunk.copy(out, 4);
-  out.writeUInt32BE(crc32(chunk), chunk.length + 4);
-  return out;
-}
-
-function writePng(path, w, h, paint) {
-  const pixels = Buffer.alloc(w * h * 4);
-  paint((x, y, rgb) => {
-    const i = (y * w + x) * 4;
-    pixels[i] = (rgb >> 16) & 0xff;
-    pixels[i + 1] = (rgb >> 8) & 0xff;
-    pixels[i + 2] = rgb & 0xff;
-    pixels[i + 3] = 0xff;
-  });
-  const raw = Buffer.alloc(h * (w * 4 + 1));
-  for (let y = 0; y < h; y++) {
-    pixels.copy(raw, y * (w * 4 + 1) + 1, y * w * 4, (y + 1) * w * 4);
-  }
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(w, 0);
-  ihdr.writeUInt32BE(h, 4);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // color type RGBA
-  const png = Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    pngChunk('IHDR', ihdr),
-    pngChunk('IDAT', deflateSync(raw)),
-    pngChunk('IEND', Buffer.alloc(0)),
-  ]);
-  writeFileSync(path, png);
-}
-
-function fillRect(set, x0, y0, w, h, rgb) {
-  for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) set(x, y, rgb);
-}
-
-// Mirrors the placeholder tiles drawn in BootScene.generateCaveTiles.
-function paintTiles(set) {
-  fillRect(set, 0, 0, 64, 64, 0x4a5568);
-  fillRect(set, 0, 0, 64, 4, 0x2d3748);
-  fillRect(set, 0, 60, 64, 4, 0x2d3748);
-  fillRect(set, 0, 0, 4, 64, 0x2d3748);
-  fillRect(set, 60, 0, 4, 64, 0x2d3748);
-  fillRect(set, 14, 16, 10, 10, 0x5d6b81);
-  fillRect(set, 38, 36, 12, 8, 0x5d6b81);
-  fillRect(set, 64, 0, 64, 64, 0x2d3748);
-  fillRect(set, 64, 0, 64, 10, 0x48bb78);
-  fillRect(set, 72, 14, 12, 6, 0xf6e05e);
-  fillRect(set, 108, 14, 12, 6, 0xf6e05e);
-  // Triangle tiles 3-6; unpainted pixels stay transparent.
-  const solid = [
-    (x, y) => y >= x, // bottom-left
-    (x, y) => x + y >= 64, // bottom-right
-    (x, y) => x + y <= 64, // top-left
-    (x, y) => y <= x, // top-right
-  ];
-  for (const [i, inside] of solid.entries()) {
-    const ox = 128 + i * 64;
-    for (let y = 0; y < 64; y++) {
-      for (let x = 0; x < 64; x++) {
-        if (!inside(x + 0.5, y + 0.5)) continue;
-        const nearHyp =
-          !inside(x + 4.5, y + 4.5) ||
-          !inside(x - 3.5, y + 4.5) ||
-          !inside(x + 4.5, y - 3.5) ||
-          !inside(x - 3.5, y - 3.5);
-        set(ox + x, y, nearHyp ? 0x2d3748 : 0x4a5568);
-      }
-    }
-  }
-}
-
 // --- write outputs -------------------------------------------------------------
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const tilesPath = join(root, 'public/assets/tiles/cave-tiles.png');
 const only = process.argv[2] ? Number(process.argv[2]) : null;
 
 for (const level of LEVELS) {
@@ -585,11 +496,4 @@ for (const level of LEVELS) {
   console.log(
     `  Spawn: (${built.spawn.x}, ${built.spawn.y})  Pad: ${JSON.stringify(built.padRect)}`,
   );
-}
-
-// Bootstrap only: the shipped tileset is custom art, never overwrite it.
-if (!existsSync(tilesPath)) {
-  mkdirSync(dirname(tilesPath), { recursive: true });
-  writePng(tilesPath, 384, 64, paintTiles);
-  console.log(`Wrote ${tilesPath}`);
 }

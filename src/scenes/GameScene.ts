@@ -175,8 +175,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Faint dust motes behind the terrain, at scrollFactor < 1 so they drift
-   * against the rock — a speed/position cue in featureless stretches of air.
+   * Faint dust motes behind the terrain. The scrollFactor < 1 layers drift
+   * against the rock — a speed/position cue in featureless stretches of air —
+   * while the scrollFactor 1 layer sits in the terrain's own plane as a fixed
+   * reference.
    * Static in world space; the parallax alone is the motion cue, so there is
    * no per-frame cost. Drawn at depth -1: rock occludes them, they only show
    * in open air.
@@ -185,6 +187,7 @@ export class GameScene extends Phaser.Scene {
     const layers = [
       { scroll: 0.4, radius: 1.5, alpha: 0.15 },
       { scroll: 0.7, radius: 2.5, alpha: 0.25 },
+      { scroll: 1, radius: 3, alpha: 0.3 },
     ];
     const perLayer = Math.ceil((map.widthInPixels * map.heightInPixels) / 60_000);
     for (const { scroll, radius, alpha } of layers) {

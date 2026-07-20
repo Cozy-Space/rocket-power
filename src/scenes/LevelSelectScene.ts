@@ -11,7 +11,7 @@ const CELL_H = 160;
 const GRID_X = (GAME_WIDTH - (COLS * CELL_W - (CELL_W - CARD_W))) / 2;
 const GRID_Y = 150;
 
-const KEY_NAMES = ['LEFT', 'RIGHT', 'UP', 'DOWN', 'ENTER', 'SPACE', 'ESC'] as const;
+const KEY_NAMES = ['LEFT', 'RIGHT', 'UP', 'DOWN', 'ENTER', 'SPACE', 'ESC', 'E'] as const;
 type KeyName = (typeof KEY_NAMES)[number];
 
 /** Full-screen level picker: arrows + ENTER, or point and click. */
@@ -36,7 +36,7 @@ export class LevelSelectScene extends Phaser.Scene {
       .text(GAME_WIDTH / 2, 70, 'SELECT LEVEL', { ...style, fontSize: '48px', fontStyle: 'bold' })
       .setOrigin(0.5);
     this.add
-      .text(GAME_WIDTH / 2, GAME_HEIGHT - 60, '←↑↓→  select      ENTER  fly      ESC  back', {
+      .text(GAME_WIDTH / 2, GAME_HEIGHT - 60, '←↑↓→  select   ENTER  fly   E  export stats   ESC  back', {
         ...style,
         fontSize: '22px',
         color: '#8899aa',
@@ -94,6 +94,7 @@ export class LevelSelectScene extends Phaser.Scene {
     this.onPress('ENTER', () => this.launch(this.selected));
     this.onPress('SPACE', () => this.launch(this.selected));
     this.onPress('ESC', () => this.scene.start('title'));
+    this.onPress('E', () => exportStats());
   }
 
   /** Edge-detects a polled key: fires once per press, no key repeat. */
@@ -120,4 +121,21 @@ export class LevelSelectScene extends Phaser.Scene {
   private launch(levelIndex: number): void {
     this.scene.start('game', { levelIndex });
   }
+}
+
+/** Downloads all level stats as a JSON file the player can send in. */
+function exportStats(): void {
+  const progress = loadProgress();
+  const levels = LEVELS.map((_, i) => ({
+    level: i + 1,
+    ...(progress[i] ?? { plays: 0, bestMs: null, bestFuel: null }),
+  }));
+  const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), levels }, null, 2)], {
+    type: 'application/json',
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'rocket-power-stats.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }

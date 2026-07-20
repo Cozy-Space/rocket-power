@@ -12,22 +12,31 @@ export interface LevelStats {
   plays: number;
   /** Best landing time in ms, or null if the level was never landed. */
   bestMs: number | null;
+  /** Fuel used on the best-time run, or null if the level was never landed. */
+  bestFuel: number | null;
 }
 
 /** Keyed by level index. Absent key = never played. */
 export type Progress = Record<number, LevelStats>;
 
-/** One finished run: count the play, keep the best landing time. */
+/** One finished run: count the play, keep the best landing time and its fuel. */
 export function recordRun(
   progress: Progress,
   levelIndex: number,
   landed: boolean,
   elapsedMs: number,
+  fuelUsed: number,
 ): Progress {
-  const prev = progress[levelIndex] ?? { plays: 0, bestMs: null };
-  const bestMs =
-    landed && (prev.bestMs === null || elapsedMs < prev.bestMs) ? elapsedMs : prev.bestMs;
-  return { ...progress, [levelIndex]: { plays: prev.plays + 1, bestMs } };
+  const prev = progress[levelIndex] ?? { plays: 0, bestMs: null, bestFuel: null };
+  const improved = landed && (prev.bestMs === null || elapsedMs < prev.bestMs);
+  return {
+    ...progress,
+    [levelIndex]: {
+      plays: prev.plays + 1,
+      bestMs: improved ? elapsedMs : prev.bestMs,
+      bestFuel: improved ? fuelUsed : prev.bestFuel,
+    },
+  };
 }
 
 /**
@@ -107,13 +116,15 @@ function sanitize(value: unknown): Progress | null {
     const s = stats as Partial<LevelStats> | null;
     if (!Number.isInteger(index) || index < 0 || typeof s !== 'object' || s === null) return null;
     if (!Number.isInteger(s.plays) || (s.plays as number) < 1) return null;
-    if (
-      s.bestMs !== null &&
-      !(typeof s.bestMs === 'number' && Number.isFinite(s.bestMs) && s.bestMs >= 0)
-    ) {
-      return null;
-    }
-    progress[index] = { plays: s.plays as number, bestMs: s.bestMs as number | null };
+    if (!isNullOrNonNegative(s.bestMs)) return null;
+    // Absent in pre-bestFuel saves — treat as null instead of resetting.
+    const bestFuel = s.bestFuel ?? null;
+    if (!isNullOrNonNegative(bestFuel)) return null;
+    progress[index] = { plays: s.plays as number, bestMs: s.bestMs as number | null, bestFuel };
   }
   return progress;
+}
+
+function isNullOrNonNegative(value: unknown): value is number | null {
+  return value === null || (typeof value === 'number' && Number.isFinite(value) && value >= 0);
 }

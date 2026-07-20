@@ -296,6 +296,7 @@ export class GameScene extends Phaser.Scene {
       this.levelIndex,
       result.outcome === 'landed',
       elapsedMs,
+      this.fuel.capacity - this.fuel.remaining,
     );
     saveProgress(progress);
 

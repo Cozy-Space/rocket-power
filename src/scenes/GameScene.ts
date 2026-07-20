@@ -76,6 +76,8 @@ export class GameScene extends Phaser.Scene {
     // Glows along the rock/air silhouette (alpha edge), both sides; WebGL only.
     terrain.postFX.addGlow(0xffffff, 2, 2);
 
+    this.addParallaxDust(map);
+
     this.markers = loadMarkers(map);
     this.rocket = new Rocket(this, this.markers.spawn.x, this.markers.spawn.y);
     this.rocket.body.setMaxSpeed(MAX_SPEED);
@@ -170,6 +172,35 @@ export class GameScene extends Phaser.Scene {
     // Sample AFTER this frame's physics step: it becomes the pre-impact
     // velocity seen by next frame's collide callback.
     this.lastVelocity.copy(this.rocket.body.velocity);
+  }
+
+  /**
+   * Faint dust motes behind the terrain, at scrollFactor < 1 so they drift
+   * against the rock — a speed/position cue in featureless stretches of air.
+   * Static in world space; the parallax alone is the motion cue, so there is
+   * no per-frame cost. Drawn at depth -1: rock occludes them, they only show
+   * in open air.
+   */
+  private addParallaxDust(map: Phaser.Tilemaps.Tilemap): void {
+    const layers = [
+      { scroll: 0.4, radius: 1.5, alpha: 0.15 },
+      { scroll: 0.7, radius: 2.5, alpha: 0.25 },
+    ];
+    const perLayer = Math.ceil((map.widthInPixels * map.heightInPixels) / 60_000);
+    for (const { scroll, radius, alpha } of layers) {
+      for (let i = 0; i < perLayer; i++) {
+        this.add
+          .circle(
+            Phaser.Math.Between(0, map.widthInPixels),
+            Phaser.Math.Between(0, map.heightInPixels),
+            radius,
+            0xffffff,
+            alpha,
+          )
+          .setScrollFactor(scroll)
+          .setDepth(-1);
+      }
+    }
   }
 
   /**
